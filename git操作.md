@@ -62,42 +62,21 @@ git checkout 版本号
 # 查看完毕，回到最新版本
 git checkout master
 
-⏪ 四、版本回退操作
-4.1 临时查看老版本（不删除新版本）
-Bash
 
-# 查看版本历史
-git log --oneline
+# bug解决
+C:\A_XM\xm_3\vue3-fastapi-mysql_v1.0>git push -u origin master
+error: src refspec master does not match any
+error: failed to push some refs to 'http://localhost:8001/root/vue3-fastapi-mysql_v1.0.git'
 
-# 切换到指定版本查看（临时）
-git checkout 版本号
+这是由于没有master分支导致的错误，使用
+git branch -a
+查看有哪些分支，一般都默认是main分支。
+没有master分支，我们要创建分支
 
-# 查看完毕，回到最新版本
-git checkout master
+创建并切换到新分支（比如 dev）
+git checkout -b master
 
-⏪ 四、版本回退操作
-4.1 临时查看老版本（不删除新版本）
-Bash
+或者只创建不分切换
+git branch master
 
-# 查看版本历史
-git log --oneline
-
-# 切换到指定版本查看（临时）
-git checkout 版本号
-
-# 查看完毕，回到最新版本
-git checkout master
-
-
-⏪ 四、版本回退操作
-4.1 临时查看老版本（不删除新版本）
-Bash
-
-# 查看版本历史
-git log --oneline
-
-# 切换到指定版本查看（临时）
-git checkout 版本号
-
-# 查看完毕，回到最新版本
-git checkout master
+执行 git add . 和 git commit -m "init"
