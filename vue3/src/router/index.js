@@ -4,9 +4,13 @@ import { getToken } from '@/utils/auth'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+
+    //
+    // V1开发需求路由
+    //
     {
       path: '/',
-      redirect: '/login'
+      redirect: '/home' // 改为重定向到主页
     },
     {
       path: '/login',
@@ -23,7 +27,7 @@ const router = createRouter({
     {
       path: '/home',
       name: 'Home',
-      component: () => import('@/views/v1/Home.vue'),
+      component: () => import('@/views/v1/Home.vue'), // 保持V1，但会修改内容
       meta: { requiresAuth: true }
     },
     {
@@ -37,7 +41,19 @@ const router = createRouter({
       name: 'ChangePassword',
       component: () => import('@/views/v1/ChangePassword.vue'),
       meta: { requiresAuth: true }
-    }
+    },
+
+
+    //
+    // V2版本路由
+    // 新增：AI开发平台页面（V2版本）
+    //
+    {
+      path: '/ai-platform',
+      name: 'AIPlatform',
+      component: () => import('@/views/v2/AIPlatform.vue'),
+      meta: { requiresAuth: true }
+    },
   ]
 })
 

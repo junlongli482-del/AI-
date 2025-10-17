@@ -1,42 +1,63 @@
 <template>
   <div class="home-container">
-    <header class="header">
-      <div class="header-content">
-        <h1 class="logo">用户系统</h1>
-        <div class="user-menu">
-          <el-dropdown @command="handleCommand">
-            <div class="user-info">
-              <span class="username">{{ displayName }}</span>
-              <span class="arrow">▼</span>
-            </div>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="profile">👤 用户中心</el-dropdown-item>
-                <el-dropdown-item command="logout" divided>🚪 退出登录</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
-      </div>
-    </header>
+    <!-- 使用全局导航组件 -->
+    <AppHeader />
 
+    <!-- 主要内容区域 -->
     <main class="main-content">
-      <div class="welcome-card">
-        <h2>欢迎回来，{{ displayName }}！</h2>
-        <p class="subtitle">这是您的个人主页</p>
+      <!-- 欢迎区域 -->
+      <div class="welcome-section">
+        <h2 class="welcome-title">欢迎使用多智能体开发平台</h2>
+        <p class="welcome-subtitle">通过AI智能体协同，让全栈开发变得简单高效</p>
       </div>
 
-      <div class="quick-actions">
-        <div class="action-card" @click="$router.push('/user-center')">
-          <div class="action-icon">👤</div>
-          <h3>个人中心</h3>
-          <p>查看和管理个人信息</p>
+      <!-- 主要功能卡片 -->
+      <div class="feature-cards">
+        <!-- AI开发平台大卡片 -->
+        <div class="main-feature-card" @click="$router.push('/ai-platform')">
+          <div class="feature-icon">🤖</div>
+          <h3 class="feature-title">AI开发平台</h3>
+          <p class="feature-description">
+            选择专业的AI智能体，获得产品设计、后端开发、前端开发的专业指导，
+            让您的项目开发更加高效和专业。
+          </p>
+          <div class="feature-button">
+            进入平台
+            <span class="arrow-right">→</span>
+          </div>
         </div>
 
-        <div class="action-card" @click="$router.push('/change-password')">
-          <div class="action-icon">🔒</div>
-          <h3>修改密码</h3>
-          <p>更新您的登录密码</p>
+        <!-- 其他功能卡片 -->
+        <div class="secondary-cards">
+          <div class="secondary-card" @click="$router.push('/user-center')">
+            <div class="secondary-icon">👤</div>
+            <h4>用户中心</h4>
+            <p>管理个人信息</p>
+          </div>
+
+          <div class="secondary-card" @click="$router.push('/change-password')">
+            <div class="secondary-icon">🔒</div>
+            <h4>修改密码</h4>
+            <p>更新登录密码</p>
+          </div>
+
+          <div class="secondary-card" @click="$router.push('/document-manager')">
+            <div class="secondary-icon">📚</div>
+            <h4>文档管理</h4>
+            <p>管理技术文档</p>
+          </div>
+
+          <div class="secondary-card coming-soon">
+            <div class="secondary-icon">📊</div>
+            <h4>项目管理</h4>
+            <p>即将上线</p>
+          </div>
+
+          <div class="secondary-card coming-soon">
+            <div class="secondary-icon">📚</div>
+            <h4>学习中心</h4>
+            <p>即将上线</p>
+          </div>
         </div>
       </div>
     </main>
@@ -44,169 +65,197 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { ElMessage } from 'element-plus'
+import AppHeader from '@/components/layout/AppHeader.vue'
 
-const router = useRouter()
 const userStore = useUserStore()
-
-const displayName = computed(() => userStore.userInfo?.username || '用户')
 
 onMounted(async () => {
   try {
-    await userStore.getUserInfo()
+    if (!userStore.userInfo) {
+      await userStore.getUserInfo()
+    }
   } catch (error) {
     ElMessage.error('获取用户信息失败')
   }
 })
-
-const handleCommand = async (command) => {
-  if (command === 'profile') {
-    router.push('/user-center')
-  } else if (command === 'logout') {
-    try {
-      await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      })
-      userStore.logout()
-      ElMessage.success('已退出登录')
-      router.push('/login')
-    } catch {
-      // 用户取消
-    }
-  }
-}
 </script>
 
 <style scoped>
 .home-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(240,242,245,0.95) 100%);
-  backdrop-filter: blur(20px);
+  background: #ffffff;
 }
 
-.header {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(30px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-}
+/* 删除原来的 .header 相关样式 */
 
-.header-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 16px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo {
-  font-size: 24px;
-  font-weight: 600;
-  color: #1d1d1f;
-  margin: 0;
-  letter-spacing: -0.5px;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  padding: 8px 16px;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-}
-
-.user-info:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-.username {
-  font-size: 15px;
-  font-weight: 500;
-  color: #1d1d1f;
-}
-
-.arrow {
-  font-size: 12px;
-  color: #86868b;
-}
-
+/* 主要内容区域 */
 .main-content {
   max-width: 1200px;
   margin: 0 auto;
   padding: 48px 24px;
 }
 
-.welcome-card {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(30px);
-  border-radius: 24px;
-  padding: 48px;
-  margin-bottom: 32px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+.welcome-section {
+  text-align: center;
+  margin-bottom: 48px;
 }
 
-.welcome-card h2 {
-  font-size: 32px;
+.welcome-title {
+  font-size: 36px;
   font-weight: 600;
-  color: #1d1d1f;
-  margin: 0 0 12px 0;
-  letter-spacing: -0.5px;
+  color: #24292f;
+  margin: 0 0 16px 0;
+  line-height: 1.2;
 }
 
-.subtitle {
-  font-size: 16px;
-  color: #86868b;
+.welcome-subtitle {
+  font-size: 18px;
+  color: #656d76;
   margin: 0;
+  line-height: 1.5;
 }
 
-.quick-actions {
+/* 功能卡片区域 */
+.feature-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
+  grid-template-columns: 2fr 1fr;
+  gap: 32px;
+  align-items: start;
 }
 
-.action-card {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(30px);
-  border-radius: 20px;
-  padding: 32px;
+/* 主要功能卡片 */
+.main-feature-card {
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 12px;
+  padding: 48px;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  text-align: center;
 }
 
-.action-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+.main-feature-card:hover {
+  border-color: #007AFF;
+  box-shadow: 0 8px 24px rgba(0, 122, 255, 0.12);
+  transform: translateY(-2px);
 }
 
-.action-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
+.feature-icon {
+  font-size: 64px;
+  margin-bottom: 24px;
 }
 
-.action-card h3 {
-  font-size: 20px;
+.feature-title {
+  font-size: 28px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: #24292f;
+  margin: 0 0 16px 0;
+}
+
+.feature-description {
+  font-size: 16px;
+  color: #656d76;
+  line-height: 1.6;
+  margin: 0 0 32px 0;
+}
+
+.feature-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #007AFF;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.main-feature-card:hover .feature-button {
+  background: #0056CC;
+}
+
+.arrow-right {
+  transition: transform 0.2s ease;
+}
+
+.main-feature-card:hover .arrow-right {
+  transform: translateX(4px);
+}
+
+/* 次要功能卡片 */
+.secondary-cards {
+  display: grid;
+  gap: 16px;
+}
+
+.secondary-card {
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.secondary-card:hover:not(.coming-soon) {
+  border-color: #007AFF;
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.1);
+}
+
+.secondary-card.coming-soon {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondary-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.secondary-card h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #24292f;
   margin: 0 0 8px 0;
 }
 
-.action-card p {
+.secondary-card p {
   font-size: 14px;
-  color: #86868b;
+  color: #656d76;
   margin: 0;
 }
 
-:deep(.el-dropdown-menu__item) {
-  padding: 12px 20px;
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 32px 16px;
+  }
+
+  .welcome-title {
+    font-size: 28px;
+  }
+
+  .welcome-subtitle {
+    font-size: 16px;
+  }
+
+  .feature-cards {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .main-feature-card {
+    padding: 32px 24px;
+  }
+
+  .feature-title {
+    font-size: 24px;
+  }
 }
 </style>

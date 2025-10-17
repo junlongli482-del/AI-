@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 修改密码
 export function changePassword(data) {
   return request({
-    url: '/password_manager/change-password',
+    url: 'v1/password_manager/change-password',
     method: 'post',
     data
   })
@@ -12,7 +12,7 @@ export function changePassword(data) {
 // 检查密码强度
 export function checkPasswordStrength(password) {
   return request({
-    url: '/password_manager/check-strength',
+    url: 'v1/password_manager/check-strength',
     method: 'post',
     data: { password }
   })
@@ -21,7 +21,7 @@ export function checkPasswordStrength(password) {
 // 获取用户信息
 export function getUserInfo() {
   return request({
-    url: '/password_manager/user-info',
+    url: 'v1/password_manager/user-info',
     method: 'get'
   })
 }

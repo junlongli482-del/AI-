@@ -7,10 +7,10 @@ import router from '@/router'
 // 使用哪个就取消注释哪个，注释掉不用的
 
 // 本地开发
-// const API_BASE_URL = 'http://localhost:8100/api/v1'
+const API_BASE_URL = 'http://localhost:8100/api'
 
 // 公网访问
-const API_BASE_URL = 'http://ljl.api.cpolar.top/api/v1'
+// const API_BASE_URL = 'http://ljl.api.cpolar.top/api/v1'
 
 // ===================================
 
