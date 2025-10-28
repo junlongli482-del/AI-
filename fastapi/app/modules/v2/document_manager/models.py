@@ -2,7 +2,7 @@
 文档管理模块 - 数据模型
 功能：定义文件夹和文档的ORM模型
 """
-from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, Enum, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, Enum, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -81,6 +81,12 @@ class Document(Base):
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
 
+    # 🆕 文档更新功能字段
+    pending_title = Column(String(200), nullable=True, comment='待审核标题')
+    pending_content = Column(Text, nullable=True, comment='待审核内容')
+    pending_summary = Column(Text, nullable=True, comment='待审核摘要')
+    has_pending_update = Column(Boolean, default=False, comment='是否有待审核更新')
+
     # 关系定义
     folder = relationship("Folder", back_populates="documents")
     user = relationship("User", foreign_keys=[user_id])
@@ -93,3 +99,6 @@ class Document(Base):
 
     # 🆕 新增：分享功能关系映射
     shares = relationship("DocumentShare", cascade="all, delete-orphan")
+
+    # 在现有字段后添加
+    has_published_version = Column(Boolean, default=False, comment='是否曾经发布过')

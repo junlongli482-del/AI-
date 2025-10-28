@@ -8,7 +8,8 @@ from .models import PublishRecord, PublishHistory
 from .schemas import (
     PublishRequest, UnpublishRequest, PublishRecordResponse,
     PublishHistoryResponse, PublishedDocumentsQuery, PublishStatsResponse,
-    DocumentPublishDetail, PublishedDocumentItem, PublishedDocumentsResponse
+    DocumentPublishDetail, PublishedDocumentItem, PublishedDocumentsResponse,
+    DocumentUpdateRequest, DocumentUpdateResponse
 )
 
 # 导入其他模块的模型
@@ -147,7 +148,7 @@ class DocumentPublishService:
             action_reason=reason,
             old_status=old_status,
             new_status="published",
-            operator_id=None  # AI系统操作
+            operator_id=None
         )
         db.add(history)
 
@@ -156,6 +157,7 @@ class DocumentPublishService:
         if document:
             document.status = "published"
             document.publish_time = datetime.utcnow()
+            document.has_published_version = True  # 🆕 标记为已发布过
 
     @staticmethod
     def _reject_publish(db: Session, publish_record: PublishRecord, reason: str):
@@ -437,3 +439,201 @@ class DocumentPublishService:
         if publish_record:
             publish_record.view_count += 1
             db.commit()
+
+    @staticmethod
+    def update_published_document(
+            db: Session,
+            user_id: int,
+            document_id: int,
+            request: DocumentUpdateRequest
+    ) -> DocumentUpdateResponse:
+        """更新已发布文档（保留所有互动数据）"""
+
+        # 1. 验证文档和发布记录
+        document = db.query(Document).filter(
+            and_(
+                Document.id == document_id,
+                Document.user_id == user_id
+            )
+        ).first()
+
+        if not document:
+            raise HTTPException(status_code=404, detail="文档不存在或无权限")
+
+        publish_record = db.query(PublishRecord).filter(
+            and_(
+                PublishRecord.document_id == document_id,
+                PublishRecord.user_id == user_id,
+                PublishRecord.publish_status == "published"
+            )
+        ).first()
+
+        if not publish_record:
+            raise HTTPException(status_code=400, detail="文档未发布或状态异常")
+
+        # 2. 检查是否有待处理的更新（改进版）
+        if publish_record.publish_status == "pending_review":
+            raise HTTPException(status_code=400, detail="文档正在审核中，请等待审核完成")
+
+        # 3. 强制更新模式 - 不检查内容变更，直接允许更新
+        has_changes = True  # 强制设置为True
+        print(f"强制更新文档 ID: {document_id}, 原因: {request.update_reason}")
+
+        # 4. 保存待审核内容到临时字段
+        document.pending_title = request.title or document.title
+        document.pending_content = request.content or document.content
+        document.pending_summary = request.summary or document.summary
+        document.has_pending_update = True
+
+        # 5. 更新发布记录状态
+        old_status = publish_record.publish_status
+        publish_record.publish_status = "pending_review"
+        publish_record.publish_version += 1
+        publish_record.unpublish_reason = None  # 清除之前的失败原因
+        publish_record.updated_at = datetime.utcnow()
+
+        # 6. 记录操作历史
+        history = PublishHistory(
+            publish_record_id=publish_record.id,
+            document_id=document_id,
+            user_id=user_id,
+            action_type="edit",
+            action_reason=request.update_reason,
+            old_status=old_status,
+            new_status="pending_review",
+            operator_id=user_id
+        )
+        db.add(history)
+
+        # 7. 触发AI审核（使用临时内容）
+        try:
+            DocumentPublishService._trigger_ai_review_for_update(db, document, publish_record)
+        except Exception as e:
+            print(f"AI审核触发失败: {str(e)}")
+            # 审核失败不影响提交流程
+
+        db.commit()
+        db.refresh(publish_record)
+
+        # 8. 构建响应
+        return DocumentUpdateResponse(
+            success=True,
+            message="文档更新提交成功，正在进行AI审核",
+            publish_record=PublishRecordResponse.model_validate(publish_record),
+            update_info={
+                "has_pending_update": True,
+                "review_status": "pending",
+                "estimated_review_time": "1-3分钟",
+                "version": publish_record.publish_version,
+                "update_reason": request.update_reason
+            }
+        )
+
+    @staticmethod
+    def _trigger_ai_review_for_update(db: Session, document: Document, publish_record: PublishRecord):
+        """为文档更新触发AI审核"""
+        try:
+            from app.modules.v2.ai_review.services import ai_review_service
+
+            # 创建临时文档对象用于审核（包含待审核内容）
+            temp_document = Document(
+                id=document.id,
+                title=document.pending_title,
+                content=document.pending_content,
+                summary=document.pending_summary,
+                file_type=document.file_type,
+                file_path=document.file_path,
+                user_id=document.user_id
+            )
+
+            # 提交审核
+            review_result = ai_review_service.submit_document_review(
+                temp_document,
+                publish_record.user_id,
+                db
+            )
+
+            # 更新审核ID
+            publish_record.review_id = review_result.id
+
+            # 根据审核结果处理
+            if review_result.review_result == "passed":
+                DocumentPublishService._approve_document_update(db, document, publish_record, "AI审核通过")
+            elif review_result.review_result == "failed":
+                DocumentPublishService._reject_document_update(
+                    db, document, publish_record,
+                    review_result.failure_reason or "AI审核未通过"
+                )
+
+        except Exception as e:
+            print(f"更新审核服务调用失败: {str(e)}")
+            publish_record.publish_status = "review_failed"
+            publish_record.unpublish_reason = f"AI审核服务异常: {str(e)}"
+
+    @staticmethod
+    def _approve_document_update(db: Session, document: Document, publish_record: PublishRecord, reason: str):
+        """审核通过，应用更新内容"""
+        old_status = publish_record.publish_status
+
+        # 应用待审核内容到正式字段
+        document.title = document.pending_title
+        document.content = document.pending_content
+        document.summary = document.pending_summary
+
+        # 清除临时字段
+        document.pending_title = None
+        document.pending_content = None
+        document.pending_summary = None
+        document.has_pending_update = False
+
+        # 更新发布状态
+        publish_record.publish_status = "published"
+        publish_record.publish_time = datetime.utcnow()  # 更新发布时间
+
+        # 记录历史
+        history = PublishHistory(
+            publish_record_id=publish_record.id,
+            document_id=document.id,
+            user_id=publish_record.user_id,
+            action_type="approve",
+            action_reason=f"更新审核通过: {reason}",
+            old_status=old_status,
+            new_status="published",
+            operator_id=None  # AI系统操作
+        )
+        db.add(history)
+
+        print(f"✅ 文档更新审核通过，版本: {publish_record.publish_version}")
+
+    @staticmethod
+    def _reject_document_update(db: Session, document: Document, publish_record: PublishRecord, reason: str):
+        """审核拒绝，回滚到原内容"""
+        old_status = publish_record.publish_status
+
+        # 清除临时字段，保持原内容
+        document.pending_title = None
+        document.pending_content = None
+        document.pending_summary = None
+        document.has_pending_update = False
+
+        # 回滚发布状态和版本
+        publish_record.publish_status = "published"  # 回到已发布状态
+        publish_record.publish_version -= 1  # 回滚版本号
+        publish_record.unpublish_reason = reason
+
+        # 记录历史
+        history = PublishHistory(
+            publish_record_id=publish_record.id,
+            document_id=document.id,
+            user_id=publish_record.user_id,
+            action_type="reject",
+            action_reason=f"更新审核拒绝: {reason}",
+            old_status=old_status,
+            new_status="published",
+            operator_id=None  # AI系统操作
+        )
+        db.add(history)
+
+        print(f"❌ 文档更新审核拒绝，回滚到原版本")
+
+

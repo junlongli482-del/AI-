@@ -112,3 +112,48 @@ class PublishedDocumentsResponse(BaseModel):
     page: int
     size: int
     pages: int
+
+
+# 🆕 文档更新请求模型
+class DocumentUpdateRequest(BaseModel):
+    title: Optional[str] = Field(None, max_length=200, description="新标题")
+    content: Optional[str] = Field(None, description="新内容")
+    summary: Optional[str] = Field(None, max_length=500, description="新摘要")
+    update_reason: str = Field(..., max_length=500, description="更新原因")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "title": "更新后的文档标题",
+                "content": "# 更新后的内容\n\n这是更新后的文档内容...",
+                "summary": "更新后的摘要",
+                "update_reason": "修复内容错误，增加新的示例"
+            }
+        }
+
+
+# 🆕 文档更新响应模型
+class DocumentUpdateResponse(BaseModel):
+    success: bool
+    message: str
+    publish_record: PublishRecordResponse
+    update_info: Dict[str, Any]
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "message": "文档更新提交成功，正在进行AI审核",
+                "publish_record": {
+                    "id": 1,
+                    "document_id": 123,
+                    "publish_status": "pending_review",
+                    "publish_version": 2
+                },
+                "update_info": {
+                    "has_pending_update": True,
+                    "review_status": "pending",
+                    "estimated_review_time": "1-3分钟"
+                }
+            }
+        }

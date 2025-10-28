@@ -54,6 +54,23 @@ const router = createRouter({
       component: () => import('@/views/v2/AIPlatform.vue'),
       meta: { requiresAuth: true }
     },
+
+    //
+    // V2版本路由 - 文档管理系统
+    //
+    {
+      path: '/document-manager',
+      name: 'DocumentManager',
+      component: () => import('@/views/v2/DocumentManager/index.vue'),
+      meta: { requiresAuth: true }
+    },
+    // 预留：文档编辑器路由（第二阶段开发）
+    {
+      path: '/document-editor',
+      name: 'DocumentEditor',
+      component: () => import('@/views/v2/DocumentEditor/index.vue'),
+      meta: { requiresAuth: true }
+    },
   ]
 })
 

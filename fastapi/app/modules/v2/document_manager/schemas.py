@@ -98,6 +98,11 @@ class DocumentResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    # 🆕 新增字段
+    publish_status: Optional[str] = None  # 技术广场状态
+    content_status: str  # 内容状态（就是原来的status）
+    has_published_version: bool = False  # 是否曾经发布过
+
     class Config:
         from_attributes = True
 

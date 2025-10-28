@@ -11,10 +11,10 @@ class AIClient:
 
     def __init__(self, api_url: str = None, api_key: str = None):
         # 使用传入参数或默认配置
-        self.api_url = api_url or "http://127.0.0.1:8888/v1/chat-messages"
+        self.api_url = api_url or "http://erp.miraclink.com:5200/v1/chat-messages"
         self.upload_url = api_url.replace("chat-messages",
-                                          "files/upload") if api_url else "http://127.0.0.1:8888/v1/files/upload"
-        self.api_key = api_key or "app-JxcTVFGIpdo7gWhLaSoSAVTq"
+                                          "files/upload") if api_url else "http://erp.miraclink.com:5200/v1/files/upload"
+        self.api_key = api_key or "app-8f3Da0t8mrQATqwYeGTJEOTs"
         self.user_id = "system-md-editor"  # 系统用户ID
 
     def chat_with_ai(self, query: str, file_ids: Optional[list] = None, file_types: Optional[list] = None) -> Optional[
@@ -75,10 +75,10 @@ class AIClient:
         """
         # 根据优化类型构建不同的提示词
         prompts = {
-            "general": "请优化以下Markdown文档，保持原有结构和格式，提升表达质量、逻辑清晰度和可读性：",
-            "grammar": "请检查并修正以下Markdown文档中的语法错误、拼写错误和表达问题，保持原有格式：",
-            "structure": "请优化以下Markdown文档的结构和层次，使其更加清晰有序，保持原有内容：",
-            "expand": "请在保持原有结构的基础上，适当扩展以下Markdown文档的内容，使其更加详细和完整："
+            "general": "请优化以下Markdown文档，保持原有结构和格式，提升表达质量、逻辑清晰度和可读性,但注意保持文字内容差不多。：",
+            "grammar": "请检查并修正以下Markdown文档中的语法错误、拼写错误，保持原有格式，但注意保持文字内容差不多：",
+            "structure": "请优化以下Markdown文档的结构和层次，使其更加清晰有序，保持原有内容，但注意保持文字内容差不多：",
+            "expand": "请在保持原有结构的基础上，适当扩展以下Markdown文档的内容，使其更加详细和完整，但注意适当扩展，不要过度扩展："
         }
 
         prompt = prompts.get(optimization_type, prompts["general"])

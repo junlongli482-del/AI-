@@ -6,7 +6,7 @@ from .services import DocumentPublishService
 from .schemas import (
     PublishRequest, UnpublishRequest, PublishRecordResponse,
     PublishedDocumentsQuery, PublishStatsResponse, DocumentPublishDetail,
-    PublishedDocumentsResponse
+    PublishedDocumentsResponse, DocumentUpdateRequest, DocumentUpdateResponse
 )
 from .dependencies import get_publish_dependencies, verify_document_owner
 from app.core.database import get_db
@@ -294,3 +294,41 @@ async def get_publish_config():
             }
         }
     }
+
+
+@router.put("/update/{document_id}", response_model=DocumentUpdateResponse)
+async def update_published_document(
+        document_id: int,
+        request: DocumentUpdateRequest,
+        deps=Depends(get_publish_dependencies)
+):
+    """
+    更新已发布文档（保留所有互动数据）
+
+    功能特点：
+    - ✅ 保留所有互动数据（评论、点赞、收藏、浏览量）
+    - ✅ 重新提交AI审核
+    - ✅ 审核期间技术广场显示旧版本
+    - ✅ 审核通过后显示新版本
+    - ✅ 分享链接保持有效
+    - ✅ 版本控制和操作历史
+
+    业务流程：
+    1. 验证文档权限和发布状态
+    2. 保存待审核内容到临时字段
+    3. 触发AI审核
+    4. 审核通过：应用新内容
+    5. 审核失败：回滚到原内容
+    """
+    try:
+        result = DocumentPublishService.update_published_document(
+            db=deps["db"],
+            user_id=deps["user_id"],
+            document_id=document_id,
+            request=request
+        )
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"更新文档失败: {str(e)}")

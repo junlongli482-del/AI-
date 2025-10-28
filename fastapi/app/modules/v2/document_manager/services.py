@@ -2,6 +2,9 @@
 文档管理模块 - 业务逻辑服务
 功能：处理文档和文件夹的核心业务逻辑
 """
+# 在现有导入中添加这两行
+import urllib.parse
+import re
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc
 from fastapi import HTTPException, status
@@ -15,6 +18,12 @@ from .schemas import (
     DocumentCreateRequest, DocumentUpdateRequest, DocumentResponse,
     DocumentListResponse, DocumentListWithPaginationResponse
 )
+from app.modules.v2.document_publish.models import PublishRecord
+# 在现有导入中添加
+from fastapi.responses import FileResponse, StreamingResponse
+import mimetypes
+from pathlib import Path
+import aiofiles
 
 class FolderService:
     """文件夹服务类"""
@@ -136,6 +145,7 @@ class FolderService:
 
 class DocumentService:
     """文档服务类"""
+
 
     @staticmethod
     def create_document(db: Session, doc_data: DocumentCreateRequest, user_id: int) -> DocumentResponse:
@@ -357,15 +367,33 @@ class DocumentService:
             folder = db.query(Folder).filter(Folder.id == document.folder_id).first()
             folder_name = folder.name if folder else None
 
+        # 🆕 获取发布记录状态
+        publish_record = db.query(PublishRecord).filter(
+            PublishRecord.document_id == document.id
+        ).first()
+
+        # 🆕 计算组合状态
+        publish_status = "draft"  # 技术广场状态
+        content_status = document.status  # 内容状态
+
+        if publish_record:
+            publish_status = publish_record.publish_status
+
         return DocumentResponse(
             id=document.id,
             title=document.title,
             content=document.content,
             file_path=document.file_path,
-            file_type=document.file_type,  # 直接使用字符串值
+            file_type=document.file_type,
             file_size=document.file_size,
             summary=document.summary,
-            status=document.status,  # 直接使用字符串值
+            status=document.status,  # 保持兼容性
+
+            # 🆕 新增字段
+            publish_status=publish_status,  # 技术广场状态
+            content_status=content_status,  # 内容状态
+            has_published_version=document.has_published_version,
+
             publish_time=document.publish_time,
             review_message=document.review_message,
             folder_id=document.folder_id,
@@ -373,3 +401,210 @@ class DocumentService:
             created_at=document.created_at,
             updated_at=document.updated_at
         )
+
+    @staticmethod
+    def _safe_filename(filename: str) -> str:
+        """
+        生成安全的文件名，处理中文字符和特殊字符
+        """
+        # 移除或替换不安全的字符
+        safe_name = re.sub(r'[<>:"/\\|?*]', '_', filename)
+        # 限制文件名长度
+        if len(safe_name) > 100:
+            safe_name = safe_name[:100]
+        return safe_name
+
+    @staticmethod
+    def _encode_filename_for_header(filename: str) -> str:
+        """
+        为HTTP头部编码文件名，支持中文字符
+        """
+        # 使用RFC 5987标准编码中文文件名
+        encoded_filename = urllib.parse.quote(filename, safe='')
+        return f"filename*=UTF-8''{encoded_filename}"
+
+    @staticmethod
+    def download_document(db: Session, doc_id: int, user_id: int, preview: bool = False):
+        """下载文档文件（修复版）"""
+        document = db.query(Document).filter(
+            and_(Document.id == doc_id, Document.user_id == user_id)
+        ).first()
+
+        if not document:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="文档不存在"
+            )
+
+        # 检查是否有文件路径
+        if not document.file_path:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="文档没有关联的文件"
+            )
+
+        # 检查文件是否存在
+        file_path = Path(document.file_path)
+        if not file_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="文件不存在"
+            )
+
+        # 获取MIME类型
+        mime_type, _ = mimetypes.guess_type(str(file_path))
+        if not mime_type:
+            if document.file_type == 'pdf':
+                mime_type = 'application/pdf'
+            elif document.file_type == 'md':
+                mime_type = 'text/markdown'
+            else:
+                mime_type = 'application/octet-stream'
+
+        # 生成安全的文件名
+        safe_title = DocumentService._safe_filename(document.title)
+        filename = f"{safe_title}.{document.file_type}"
+
+        # 编码文件名用于HTTP头部
+        encoded_filename = DocumentService._encode_filename_for_header(filename)
+
+        # 根据预览模式设置Content-Disposition
+        if preview and document.file_type == 'pdf':
+            # 预览模式：浏览器内打开
+            disposition = f'inline; {encoded_filename}'
+        else:
+            # 下载模式：强制下载
+            disposition = f'attachment; {encoded_filename}'
+
+        headers = {
+            "Content-Disposition": disposition
+        }
+
+        return FileResponse(
+            path=str(file_path),
+            media_type=mime_type,
+            headers=headers
+        )
+
+    @staticmethod
+    def stream_document(db: Session, doc_id: int, user_id: int):
+        """流式传输文档文件（修复版）"""
+        document = db.query(Document).filter(
+            and_(Document.id == doc_id, Document.user_id == user_id)
+        ).first()
+
+        if not document:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="文档不存在"
+            )
+
+        if not document.file_path:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="文档没有关联的文件"
+            )
+
+        file_path = Path(document.file_path)
+        if not file_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="文件不存在"
+            )
+
+        # 获取文件大小
+        file_size = file_path.stat().st_size
+
+        # 设置MIME类型
+        if document.file_type == 'pdf':
+            media_type = 'application/pdf'
+        elif document.file_type == 'md':
+            media_type = 'text/markdown'
+        else:
+            media_type = 'application/octet-stream'
+
+        # 生成安全的文件名并编码
+        safe_title = DocumentService._safe_filename(document.title)
+        filename = f"{safe_title}.{document.file_type}"
+        encoded_filename = DocumentService._encode_filename_for_header(filename)
+
+        # 创建文件流生成器
+        def file_generator():
+            with open(file_path, 'rb') as file:
+                while True:
+                    chunk = file.read(8192)  # 8KB chunks
+                    if not chunk:
+                        break
+                    yield chunk
+
+        # 设置响应头（修复中文编码问题）
+        headers = {
+            'Content-Length': str(file_size),
+            'Content-Disposition': f'inline; {encoded_filename}',
+            'Accept-Ranges': 'bytes'
+        }
+
+        return StreamingResponse(
+            file_generator(),
+            media_type=media_type,
+            headers=headers
+        )
+
+    @staticmethod
+    def get_document_file_info(db: Session, doc_id: int, user_id: int):
+        """获取文档文件信息（保持不变）"""
+        document = db.query(Document).filter(
+            and_(Document.id == doc_id, Document.user_id == user_id)
+        ).first()
+
+        if not document:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="文档不存在"
+            )
+
+        # 生成安全的文件名
+        safe_title = DocumentService._safe_filename(document.title)
+        safe_filename = f"{safe_title}.{document.file_type}"
+
+        # 基础信息
+        file_info = {
+            "document_id": document.id,
+            "title": document.title,
+            "file_type": document.file_type,
+            "file_size": document.file_size,
+            "has_file": bool(document.file_path),
+            "file_path": document.file_path,
+            "safe_filename": safe_filename  # 添加安全文件名
+        }
+
+        # 如果有文件路径，检查物理文件
+        if document.file_path:
+            file_path = Path(document.file_path)
+            file_exists = file_path.exists()
+
+            file_info.update({
+                "file_exists": file_exists,
+                "original_filename": f"{document.title}.{document.file_type}"
+            })
+
+            if file_exists:
+                # 获取实际文件大小和MIME类型
+                actual_size = file_path.stat().st_size
+                mime_type, _ = mimetypes.guess_type(str(file_path))
+
+                file_info.update({
+                    "actual_file_size": actual_size,
+                    "mime_type": mime_type or f"application/{document.file_type}",
+                    "size_match": actual_size == document.file_size
+                })
+        else:
+            file_info.update({
+                "file_exists": False,
+                "original_filename": None,
+                "actual_file_size": 0,
+                "mime_type": None,
+                "size_match": False
+            })
+
+        return file_info

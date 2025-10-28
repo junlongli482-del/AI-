@@ -14,6 +14,12 @@ from .schemas import (
     DocumentListWithPaginationResponse, SuccessResponse
 )
 from app.modules.v1.user_register.models import User
+# 在现有导入中添加
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import FileResponse, StreamingResponse
+import mimetypes
+import os
+from pathlib import Path
 
 # 创建路由器
 router = APIRouter()
@@ -230,3 +236,78 @@ async def get_user_stats(
         "documents_by_status": status_dict,
         "user_id": current_user.id
     }
+
+
+# 在现有接口后添加以下代码：
+
+# ==================== 文件下载接口 ====================
+
+@router.get("/documents/{doc_id}/download", summary="下载文档文件")
+async def download_document(
+        doc_id: int,
+        preview: bool = Query(False, description="是否为预览模式（浏览器内打开）"),
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_active_user)
+):
+    """
+    下载文档文件（支持PDF预览和文件下载）
+
+    参数：
+    - **doc_id**: 文档ID
+    - **preview**: 预览模式
+      - true: 浏览器内预览（适用于PDF）
+      - false: 强制下载文件
+
+    支持的文件类型：
+    - PDF文件：支持浏览器内预览
+    - Markdown文件：下载.md文件
+
+    响应：
+    - Content-Type: 根据文件类型自动设置
+    - Content-Disposition: 根据预览模式设置
+    """
+    return DocumentService.download_document(db, doc_id, current_user.id, preview)
+
+
+@router.get("/documents/{doc_id}/stream", summary="获取文档文件流")
+async def stream_document(
+        doc_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_active_user)
+):
+    """
+    获取文档文件流（推荐用于PDF预览）
+
+    专门用于PDF文件的流式传输，优化浏览器预览体验：
+    - 设置正确的Content-Type
+    - 支持分块传输
+    - 浏览器自动选择PDF阅读器
+
+    前端调用示例：
+    ```javascript
+    const pdfUrl = `http://localhost:8100/api/v2/document_manager/documents/${doc.id}/stream`
+    window.open(pdfUrl, '_blank')
+    ```
+    """
+    return DocumentService.stream_document(db, doc_id, current_user.id)
+
+
+@router.get("/documents/{doc_id}/info", summary="获取文档文件信息")
+async def get_document_file_info(
+        doc_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_active_user)
+):
+    """
+    获取文档文件信息（不下载文件内容）
+
+    返回：
+    - 文件名
+    - 文件大小
+    - 文件类型
+    - MIME类型
+    - 是否存在物理文件
+    """
+    return DocumentService.get_document_file_info(db, doc_id, current_user.id)
+
+
