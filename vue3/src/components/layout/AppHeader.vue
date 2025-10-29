@@ -12,6 +12,9 @@
         <router-link to="/document-manager" class="nav-item">
           文档管理
         </router-link>
+        <router-link to="/tech-square" class="nav-item">
+          技术广场
+        </router-link>
       </nav>
       <div class="user-menu">
         <el-dropdown @command="handleCommand">

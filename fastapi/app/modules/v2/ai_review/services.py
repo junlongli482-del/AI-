@@ -19,15 +19,12 @@ from app.modules.v2.document_manager.models import Document
 class AIReviewService:
     def __init__(self):
         # AI服务配置 - 更新API密钥
-        self.api_url = "http://127.0.0.1:8888/v1/chat-messages"
-        self.upload_url = "http://127.0.0.1:8888/v1/files/upload"
-        self.api_key = "app-Tsm3DbgdIXiaFZMKBuNR7IO9"  # 更新的API密钥
+        self.api_url = "http://erp.miraclink.com:5200/v1/chat-messages"
+        self.upload_url = "http://erp.miraclink.com:5200/v1/files/upload"
+        self.api_key = "app-szggphzO1DQGrBx3ISQp0iEY"  # 更新的API密钥
 
         # 由于AI服务端已经预设了审核提示词，这里只保留一个说明
-        self.review_prompt_info = """AI服务端已预设内容安全审核提示词：
-- 检查政治、暴力、色情等违规内容
-- 检查同音字、谐音等变相违规内容
-- 输出格式：true/false + 具体违规原因（如果有）
+        self.review_prompt_info = """审核内容如下
 """
 
     def get_file_type(self, filename: str) -> str:

@@ -14,7 +14,7 @@ class AIClient:
         self.api_url = api_url or "http://erp.miraclink.com:5200/v1/chat-messages"
         self.upload_url = api_url.replace("chat-messages",
                                           "files/upload") if api_url else "http://erp.miraclink.com:5200/v1/files/upload"
-        self.api_key = api_key or "app-8f3Da0t8mrQATqwYeGTJEOTs"
+        self.api_key = api_key or "app-r2VTsPlXK2kQDSVtz2zCdBNJ"
         self.user_id = "system-md-editor"  # 系统用户ID
 
     def chat_with_ai(self, query: str, file_ids: Optional[list] = None, file_types: Optional[list] = None) -> Optional[
@@ -75,10 +75,34 @@ class AIClient:
         """
         # 根据优化类型构建不同的提示词
         prompts = {
-            "general": "请优化以下Markdown文档，保持原有结构和格式，提升表达质量、逻辑清晰度和可读性,但注意保持文字内容差不多。：",
-            "grammar": "请检查并修正以下Markdown文档中的语法错误、拼写错误，保持原有格式，但注意保持文字内容差不多：",
-            "structure": "请优化以下Markdown文档的结构和层次，使其更加清晰有序，保持原有内容，但注意保持文字内容差不多：",
-            "expand": "请在保持原有结构的基础上，适当扩展以下Markdown文档的内容，使其更加详细和完整，但注意适当扩展，不要过度扩展："
+            "general": """请优化以下Markdown文档，要求：
+        1. 保持原有结构和格式不变
+        2. 提升表达质量、逻辑清晰度和可读性
+        3. 保持文字内容长度基本一致，不做大幅增减
+        4. 保留所有原有信息，仅优化表达方式
+        请处理以下内容：""",
+
+            "grammar": """请检查并修正以下Markdown文档，要求：
+        1. 修正语法错误、拼写错误和标点符号问题
+        2. 保持原有Markdown格式和结构完全不变
+        3. 保持文字内容长度基本一致
+        4. 仅进行错误修正，不改变原意和表达风格
+        请处理以下内容：""",
+
+            "structure": """请优化以下Markdown文档的结构和层次，要求：
+        1. 调整标题层级、段落组织和内容排列
+        2. 使文档结构更加清晰有序和逻辑性强
+        3. 保持原有内容完整，文字长度基本不变
+        4. 可调整内容顺序，但不删减或大幅增加内容
+        请处理以下内容：""",
+
+            "expand": """请适度扩展以下Markdown文档的内容，要求：
+        1. 保持原有Markdown结构和格式
+        2. 在现有内容基础上适当补充细节和说明
+        3. 扩展幅度控制在原文的1.2-1.5倍长度范围内
+        4. 确保扩展内容与原文风格一致，逻辑连贯
+        5. 重点补充实用性强的信息，避免冗余内容
+        请处理以下内容："""
         }
 
         prompt = prompts.get(optimization_type, prompts["general"])

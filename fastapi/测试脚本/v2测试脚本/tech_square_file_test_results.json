@@ -1,0 +1,92 @@
+{
+  "test_time": "2025-10-29 13:56:58",
+  "total_tests": 14,
+  "passed_tests": 14,
+  "failed_tests": 0,
+  "results": [
+    {
+      "test": "模块健康检查",
+      "success": true,
+      "message": "模块运行正常 - Tech Square模块运行正常",
+      "timestamp": "2025-10-29 13:56:32"
+    },
+    {
+      "test": "获取已发布文档",
+      "success": true,
+      "message": "找到 5 个已发布文档",
+      "timestamp": "2025-10-29 13:56:34"
+    },
+    {
+      "test": "文件信息-文档78",
+      "success": true,
+      "message": "标题: 2025.9.22工作计划 | 类型: pdf | 有文件 | 物理文件存在",
+      "timestamp": "2025-10-29 13:56:36"
+    },
+    {
+      "test": "文件下载-文档78",
+      "success": true,
+      "message": "成功 | 类型: application/pdf | 大小: 109.87KB | 头部: attachment; filename*=UTF-8''2025.9.22%E5%B7%A5%E4...",
+      "timestamp": "2025-10-29 13:56:38"
+    },
+    {
+      "test": "文件预览-文档78",
+      "success": true,
+      "message": "成功 | 类型: application/pdf | 大小: 109.87KB | 头部: inline; filename*=UTF-8''2025.9.22%E5%B7%A5%E4%BD%...",
+      "timestamp": "2025-10-29 13:56:40"
+    },
+    {
+      "test": "文件流传输-文档78",
+      "success": true,
+      "message": "成功 | 类型: application/pdf | 大小: 109.87KB | 支持断点续传: True | 已读取: 3个块",
+      "timestamp": "2025-10-29 13:56:42"
+    },
+    {
+      "test": "文件信息-文档108",
+      "success": true,
+      "message": "标题: mysql | 类型: md | 无文件 | 物理文件不存在",
+      "timestamp": "2025-10-29 13:56:44"
+    },
+    {
+      "test": "文件信息-文档101",
+      "success": true,
+      "message": "标题: 06-文件上传模块 | 类型: md | 有文件 | 物理文件存在",
+      "timestamp": "2025-10-29 13:56:46"
+    },
+    {
+      "test": "文件下载-文档101",
+      "success": true,
+      "message": "成功 | 类型: text/markdown; charset=utf-8 | 大小: 9.28KB | 头部: attachment; filename*=UTF-8''06-%E6%96%87%E4%BB%B6...",
+      "timestamp": "2025-10-29 13:56:48"
+    },
+    {
+      "test": "文件预览-文档101",
+      "success": true,
+      "message": "成功 | 类型: text/markdown; charset=utf-8 | 大小: 9.28KB | 头部: attachment; filename*=UTF-8''06-%E6%96%87%E4%BB%B6...",
+      "timestamp": "2025-10-29 13:56:50"
+    },
+    {
+      "test": "文件流传输-文档101",
+      "success": true,
+      "message": "成功 | 类型: text/markdown; charset=utf-8 | 大小: 9.28KB | 支持断点续传: True | 已读取: 2个块",
+      "timestamp": "2025-10-29 13:56:52"
+    },
+    {
+      "test": "无效文档-文件信息",
+      "success": true,
+      "message": "正确返回404错误",
+      "timestamp": "2025-10-29 13:56:54"
+    },
+    {
+      "test": "无效文档-文件下载",
+      "success": true,
+      "message": "正确返回404错误",
+      "timestamp": "2025-10-29 13:56:56"
+    },
+    {
+      "test": "无效文档-文件流传输",
+      "success": true,
+      "message": "正确返回404错误",
+      "timestamp": "2025-10-29 13:56:58"
+    }
+  ]
+}

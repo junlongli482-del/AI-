@@ -6,10 +6,13 @@ from typing import Optional
 # 修复导入路径 - 使用相对路径
 from ....core.database import get_db  # 修改这行
 from .services import TechSquareService
+# 在现有导入中添加
+from fastapi.responses import FileResponse, StreamingResponse
 from .schemas import (
     DocumentListRequest, DocumentListResponse, DocumentDetailResponse,
     CategoryStatsResponse, HotDocumentsResponse, TechSquareStatsResponse,
-    SearchRequest, SortOption, TimeFilter, FileTypeFilter
+    SearchRequest, SortOption, TimeFilter, FileTypeFilter,
+    DocumentFileInfoResponse  # 新增
 )
 
 router = APIRouter()
@@ -213,3 +216,127 @@ async def increment_view_count(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"更新浏览量失败: {str(e)}")
+
+
+# ==================== 🆕 文件访问接口（无需认证） ====================
+
+@router.get("/documents/{document_id}/download", summary="下载文档文件")
+async def download_document_file(
+        document_id: int,
+        preview: bool = Query(False, description="是否为预览模式（浏览器内打开）"),
+        db: Session = Depends(get_db)
+):
+    """
+    下载已发布文档的文件（无需认证）
+
+    参数：
+    - **document_id**: 文档ID
+    - **preview**: 预览模式
+      - true: 浏览器内预览（适用于PDF）
+      - false: 强制下载文件
+
+    功能特点：
+    - ✅ 无需认证，公开访问
+    - ✅ 只能访问已发布的文档
+    - ✅ 支持PDF和Markdown文件
+    - ✅ 自动处理中文文件名编码
+    - ✅ 支持预览和下载两种模式
+
+    前端调用示例：
+    ```javascript
+    // 下载文件
+    const downloadUrl = `http://localhost:8100/api/v2/tech_square/documents/${docId}/download`
+
+    // 预览PDF（浏览器内打开）
+    const previewUrl = `http://localhost:8100/api/v2/tech_square/documents/${docId}/download?preview=true`
+    ```
+    """
+    try:
+        service = TechSquareService(db)
+        return service.download_document_file(document_id, preview)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"下载文档失败: {str(e)}")
+
+
+@router.get("/documents/{document_id}/stream", summary="流式传输文档")
+async def stream_document_file(
+        document_id: int,
+        db: Session = Depends(get_db)
+):
+    """
+    流式传输已发布文档（无需认证）
+
+    专门优化PDF预览体验：
+    - ✅ 分块传输，支持大文件（8KB chunks）
+    - ✅ 浏览器自动选择PDF阅读器
+    - ✅ 支持断点续传（Accept-Ranges）
+    - ✅ 无需认证，公开访问
+
+    推荐用法：
+    ```javascript
+    // 推荐：直接在新窗口打开PDF
+    const pdfUrl = `http://localhost:8100/api/v2/tech_square/documents/${docId}/stream`
+    window.open(pdfUrl, '_blank')
+
+    // 或者嵌入到iframe中
+    const iframe = document.createElement('iframe')
+    iframe.src = pdfUrl
+    iframe.width = '100%'
+    iframe.height = '600px'
+    document.body.appendChild(iframe)
+    ```
+
+    浏览器兼容性：
+    - ✅ Chrome/Edge: 完美支持PDF内嵌预览
+    - ✅ Firefox: 支持PDF预览和下载
+    - ✅ Safari: 支持PDF预览
+    - ✅ 移动端: 自动调用系统PDF阅读器
+    """
+    try:
+        service = TechSquareService(db)
+        return service.stream_document_file(document_id)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取文档流失败: {str(e)}")
+
+
+@router.get("/documents/{document_id}/info", response_model=DocumentFileInfoResponse, summary="获取文档文件信息")
+async def get_document_file_info(
+        document_id: int,
+        db: Session = Depends(get_db)
+):
+    """
+    获取已发布文档的文件信息（无需认证）
+
+    功能特点：
+    - ✅ 获取文件元信息，不下载内容
+    - ✅ 检查文件完整性
+    - ✅ 验证文件大小匹配
+    - ✅ 提供MIME类型信息
+    - ✅ 无需认证，公开访问
+
+    返回信息：
+    - 文件名和安全文件名
+    - 文件大小（数据库记录 vs 实际文件）
+    - 文件类型和MIME类型
+    - 是否存在物理文件
+    - 文件完整性验证
+
+    使用场景：
+    - 前端判断是否显示下载按钮
+    - 检查文件是否可用
+    - 获取文件基本信息用于展示
+    """
+    try:
+        service = TechSquareService(db)
+        return service.get_document_file_info(document_id)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取文件信息失败: {str(e)}")

@@ -71,6 +71,19 @@ const router = createRouter({
       component: () => import('@/views/v2/DocumentEditor/index.vue'),
       meta: { requiresAuth: true }
     },
+    // 在V2版本路由部分添加
+    {
+      path: '/tech-square',
+      name: 'TechSquare',
+      component: () => import('@/views/v2/TechSquare/index.vue'),
+      meta: { requiresAuth: false } // 技术广场公开访问
+    },
+    {
+      path: '/tech-square/document/:id',
+      name: 'TechSquareDocument',
+      component: () => import('@/views/v2/TechSquare/DocumentDetail.vue'),
+      meta: { requiresAuth: false }
+    }
   ]
 })
 

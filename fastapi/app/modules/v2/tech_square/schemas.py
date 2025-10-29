@@ -1,9 +1,8 @@
 # app/modules/v2/tech_square/schemas.py
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
-
 
 class SortOption(str, Enum):
     """排序选项枚举"""
@@ -44,6 +43,17 @@ class SearchRequest(BaseModel):
     file_type: Optional[FileTypeFilter] = Field(None, description="文件类型筛选")
 
 
+# 🆕 用户信息模型
+class UserInfoResponse(BaseModel):
+    """用户信息响应模型"""
+    user_id: int
+    username: str
+    nickname: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 # 响应模型
 class DocumentItemResponse(BaseModel):
     """文档条目响应模型"""
@@ -52,6 +62,8 @@ class DocumentItemResponse(BaseModel):
     summary: Optional[str]
     file_type: str
     user_id: int
+    username: str = Field(..., description="用户名")  # 🆕 新增
+    nickname: Optional[str] = Field(None, description="用户昵称")  # 🆕 新增
     publish_time: datetime
     view_count: int = 0
     is_featured: bool = False
@@ -80,6 +92,8 @@ class DocumentDetailResponse(BaseModel):
     file_type: str
     file_path: Optional[str]
     user_id: int
+    username: str = Field(..., description="用户名")  # 🆕 新增
+    nickname: Optional[str] = Field(None, description="用户昵称")  # 🆕 新增
     publish_time: datetime
     view_count: int = 0
     is_featured: bool = False
@@ -107,3 +121,30 @@ class TechSquareStatsResponse(BaseModel):
     today_published: int = Field(..., description="今日发布数")
     featured_count: int = Field(..., description="精选文档数")
     category_stats: CategoryStatsResponse
+
+# 在文件末尾添加以下新的响应模型
+
+class DocumentFileInfoResponse(BaseModel):
+    """文档文件信息响应模型"""
+    document_id: int
+    title: str
+    file_type: str
+    file_size: int
+    has_file: bool
+    file_path: Optional[str]
+    safe_filename: str
+    file_exists: bool
+    original_filename: Optional[str]
+    actual_file_size: Optional[int] = 0
+    mime_type: Optional[str]
+    size_match: bool = False
+
+    class Config:
+        from_attributes = True
+
+
+class FileAccessResponse(BaseModel):
+    """文件访问通用响应模型"""
+    success: bool
+    message: str
+    data: Optional[Dict[str, Any]] = None
