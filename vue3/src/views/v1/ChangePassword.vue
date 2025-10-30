@@ -23,15 +23,18 @@
 
     <main class="main-content">
       <div class="password-card">
-        <h2 class="card-title">修改密码</h2>
+        <div class="card-header">
+          <div class="header-icon">🔒</div>
+          <h2 class="card-title">修改密码</h2>
+        </div>
 
         <div class="user-info-display">
           <div class="info-item">
-            <span class="label">当前用户：</span>
+            <span class="label">👤 当前用户：</span>
             <span class="value">{{ userInfo?.username }}</span>
           </div>
           <div class="info-item">
-            <span class="label">邮箱：</span>
+            <span class="label">📧 邮箱：</span>
             <span class="value">{{ userInfo?.email }}</span>
           </div>
         </div>
@@ -69,7 +72,7 @@
                 ></div>
               </div>
               <span class="strength-text" :class="strengthClass">
-                {{ strengthText }}
+                密码强度：{{ strengthText }}
               </span>
             </div>
           </el-form-item>
@@ -91,7 +94,7 @@
                 :loading="loading"
                 class="submit-button"
               >
-                确认修改
+                {{ loading ? '修改中...' : '确认修改' }}
               </el-button>
               <el-button
                 @click="handleCancel"
@@ -104,7 +107,7 @@
         </el-form>
 
         <div class="password-tips">
-          <h4>密码要求：</h4>
+          <h4>💡 密码要求：</h4>
           <ul>
             <li>长度至少8位</li>
             <li>必须包含字母和数字</li>
@@ -213,9 +216,9 @@ const strengthWidth = computed(() => {
 const strengthText = computed(() => {
   if (!passwordStrength.value) return ''
   const score = passwordStrength.value.score
-  if (score >= 80) return '强'
-  if (score >= 60) return '中'
-  return '弱'
+  if (score >= 80) return '强 💪'
+  if (score >= 60) return '中 👍'
+  return '弱 ⚠️'
 })
 
 const handleChangePassword = async () => {
@@ -275,7 +278,13 @@ const handleCommand = async (command) => {
 <style scoped>
 .change-password-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(240,242,245,0.95) 100%);
+  background: linear-gradient(135deg,
+  rgba(255, 154, 158, 0.1) 0%,
+  rgba(250, 208, 196, 0.1) 25%,
+  rgba(168, 237, 234, 0.1) 50%,
+  rgba(254, 214, 227, 0.1) 75%,
+  rgba(255, 234, 167, 0.1) 100%
+  );
   backdrop-filter: blur(20px);
 }
 
@@ -341,26 +350,40 @@ const handleCommand = async (command) => {
 }
 
 .password-card {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(30px);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
   border-radius: 24px;
   padding: 48px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.header-icon {
+  font-size: 32px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
 }
 
 .card-title {
   font-size: 28px;
   font-weight: 600;
   color: #1d1d1f;
-  margin: 0 0 32px 0;
+  margin: 0;
   letter-spacing: -0.5px;
 }
 
 .user-info-display {
-  background: rgba(0, 122, 255, 0.05);
-  border-radius: 12px;
-  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.05) 0%, rgba(78, 205, 196, 0.05) 100%);
+  border-radius: 16px;
+  padding: 20px;
   margin-bottom: 32px;
+  border: 1px solid rgba(0, 122, 255, 0.1);
 }
 
 .info-item {
@@ -383,7 +406,7 @@ const handleCommand = async (command) => {
 .value {
   font-size: 14px;
   color: #1d1d1f;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .password-form {
@@ -400,63 +423,59 @@ const handleCommand = async (command) => {
   background: rgba(255, 255, 255, 0.6);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 :deep(.el-input__wrapper:hover) {
   background: rgba(255, 255, 255, 0.8);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 122, 255, 0.3);
 }
 
 :deep(.el-input__wrapper.is-focus) {
   background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+  border-color: #007AFF;
 }
 
 .password-strength {
-  margin-top: 8px;
+  margin-top: 12px;
 }
 
 .strength-bar {
-  height: 4px;
-  background: rgba(0, 0, 0, 0.06);
-  border-radius: 2px;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
   overflow: hidden;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
 .strength-fill {
   height: 100%;
-  transition: all 0.3s ease;
+  transition: all 0.4s ease;
+  border-radius: 3px;
 }
 
 .strength-fill.weak {
-  background: #F56C6C;
+  background: linear-gradient(90deg, #F56C6C, #ff8a80);
 }
 
 .strength-fill.medium {
-  background: #E6A23C;
+  background: linear-gradient(90deg, #E6A23C, #ffb74d);
 }
 
 .strength-fill.strong {
-  background: #67C23A;
+  background: linear-gradient(90deg, #67C23A, #81c784);
 }
 
 .strength-text {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
 }
 
-.strength-text.weak {
-  color: #F56C6C;
-}
-
-.strength-text.medium {
-  color: #E6A23C;
-}
-
-.strength-text.strong {
-  color: #67C23A;
-}
+.strength-text.weak { color: #F56C6C; }
+.strength-text.medium { color: #E6A23C; }
+.strength-text.strong { color: #67C23A; }
 
 .button-group {
   display: flex;
@@ -474,24 +493,37 @@ const handleCommand = async (command) => {
 }
 
 .submit-button {
-  background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
+  background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
   border: none;
+  color: white;
 }
 
 .submit-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 122, 255, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 122, 255, 0.4);
+}
+
+.cancel-button {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #86868b;
+}
+
+.cancel-button:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(0, 0, 0, 0.2);
+  color: #1d1d1f;
 }
 
 .password-tips {
-  background: rgba(0, 122, 255, 0.05);
-  border-radius: 12px;
-  padding: 20px;
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.05) 0%, rgba(78, 205, 196, 0.05) 100%);
+  border-radius: 16px;
+  padding: 24px;
   border-left: 4px solid #007AFF;
 }
 
 .password-tips h4 {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: #1d1d1f;
   margin: 0 0 12px 0;
@@ -515,5 +547,22 @@ const handleCommand = async (command) => {
 
 :deep(.el-dropdown-menu__item) {
   padding: 12px 20px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 32px 16px;
+  }
+
+  .password-card {
+    padding: 32px 24px;
+  }
+
+  .card-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
 }
 </style>

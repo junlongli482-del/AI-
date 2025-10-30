@@ -181,6 +181,7 @@
 </template>
 
 <script setup>
+// 保持原有的所有逻辑不变
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Upload, Loading } from '@element-plus/icons-vue'
@@ -691,7 +692,7 @@ onMounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
+  background: transparent;
   overflow: hidden;
 }
 
@@ -706,7 +707,8 @@ onMounted(() => {
 :deep(.el-tabs__header) {
   margin: 0;
   padding: 0 24px;
-  border-bottom: 1px solid #d0d7de;
+  background: rgba(255, 255, 255, 0.5);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 :deep(.el-tabs__nav-wrap) {
@@ -719,6 +721,22 @@ onMounted(() => {
   line-height: 48px;
   font-size: 15px;
   font-weight: 500;
+  color: #86868b;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-tabs__item.is-active) {
+  color: #007AFF;
+  border-bottom-color: #007AFF;
+}
+
+:deep(.el-tabs__item:hover) {
+  color: #007AFF;
+}
+
+:deep(.el-tabs__active-bar) {
+  background: #007AFF;
 }
 
 :deep(.el-tabs__content) {
@@ -738,8 +756,9 @@ onMounted(() => {
 }
 
 .list-header {
-  padding: 16px 24px;
-  border-bottom: 1px solid #d0d7de;
+  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.5);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -753,16 +772,23 @@ onMounted(() => {
 
 .stat-item {
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .stat-label {
-  color: #656d76;
+  color: #86868b;
+  font-weight: 500;
 }
 
 .stat-value {
-  color: #24292f;
+  color: #1d1d1f;
   font-weight: 600;
-  margin-left: 4px;
 }
 
 .header-actions {
@@ -777,7 +803,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: #656d76;
+  color: #86868b;
   overflow: hidden;
 }
 
@@ -785,25 +811,28 @@ onMounted(() => {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px 24px;
+  padding: 20px 24px;
 }
 
 .document-item {
-  background: #ffffff;
-  border: 1px solid #d0d7de;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .document-item:hover {
-  border-color: #007AFF;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
+  transform: translateY(-2px);
+  border-color: rgba(0, 122, 255, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .doc-info {
@@ -814,12 +843,12 @@ onMounted(() => {
 .doc-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .doc-icon {
-  font-size: 18px;
+  font-size: 20px;
   flex-shrink: 0;
 }
 
@@ -827,7 +856,7 @@ onMounted(() => {
   flex: 1;
   font-size: 16px;
   font-weight: 600;
-  color: #24292f;
+  color: #1d1d1f;
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -836,22 +865,26 @@ onMounted(() => {
 
 .doc-meta {
   display: flex;
-  gap: 16px;
+  gap: 20px;
   font-size: 13px;
-  color: #656d76;
+  color: #86868b;
   flex-wrap: wrap;
 }
 
 .meta-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .doc-actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   flex-shrink: 0;
   align-items: flex-end;
 }
@@ -867,12 +900,12 @@ onMounted(() => {
 }
 
 .delete-btn {
-  color: #f56c6c;
+  color: #dc3545;
 }
 
 .delete-btn:hover {
-  color: #f56c6c;
-  background: #fef0f0;
+  color: #dc3545;
+  background: rgba(220, 53, 69, 0.1);
 }
 
 .empty-state {
@@ -880,13 +913,14 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px;
+  padding: 60px 24px;
   overflow: hidden;
 }
 
 .pagination-container {
-  padding: 16px 24px;
-  border-top: 1px solid #d0d7de;
+  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.5);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
   display: flex;
   justify-content: center;
   flex-shrink: 0;
@@ -898,12 +932,43 @@ onMounted(() => {
 }
 
 .document-list::-webkit-scrollbar-thumb {
-  background: #d0d7de;
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 3px;
 }
 
 .document-list::-webkit-scrollbar-thumb:hover {
-  background: #656d76;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Element Plus 按钮样式覆盖 */
+:deep(.el-button) {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-button--primary) {
+  background: linear-gradient(135deg, #007AFF 0%, #4A90E2 100%);
+  border: none;
+}
+
+:deep(.el-button--primary:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+:deep(.el-button--danger) {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  border-color: rgba(220, 53, 69, 0.2);
+}
+
+:deep(.el-button--text) {
+  color: #007AFF;
+}
+
+:deep(.el-button--text:hover) {
+  background: rgba(0, 122, 255, 0.1);
 }
 
 /* 响应式设计 */
@@ -919,8 +984,13 @@ onMounted(() => {
   .list-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .stats-bar {
+    flex-wrap: wrap;
     gap: 12px;
-    padding: 12px 16px;
   }
 
   .header-actions {
@@ -932,21 +1002,25 @@ onMounted(() => {
   }
 
   .document-list {
-    padding: 12px 16px;
+    padding: 16px;
+  }
+
+  .document-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
   }
 
   .doc-actions {
     flex-direction: row;
     flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
   }
 
-  .publish-actions {
-    flex-direction: column;
-    width: 100%;
-  }
-
+  .publish-actions,
   .basic-actions {
-    width: 100%;
+    flex-wrap: wrap;
   }
 }
 </style>

@@ -42,6 +42,13 @@ const router = createRouter({
       component: () => import('@/views/v1/ChangePassword.vue'),
       meta: { requiresAuth: true }
     },
+    // 🆕 新增：我的收藏页面
+    {
+      path: '/my-favorites',
+      name: 'MyFavorites',
+      component: () => import('@/views/v1/MyFavorites.vue'),
+      meta: { requiresAuth: true }
+    },
 
 
     //
