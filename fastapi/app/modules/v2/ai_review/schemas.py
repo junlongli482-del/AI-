@@ -92,3 +92,17 @@ class ReviewStatsResponse(BaseModel):
     avg_review_duration: Optional[float]
     review_type_stats: Dict[str, int]
     recent_reviews: List[ReviewLogResponse]
+
+# 内容审核请求（不保存到数据库）
+class ContentReviewRequest(BaseModel):
+    title: str = Field(..., max_length=200, description="文档标题")
+    content: str = Field(..., min_length=1, description="文档内容")
+    document_id: Optional[int] = Field(default=None, description="文档ID（可选，用于日志记录）")
+
+# 内容审核响应（不保存到数据库）
+class ContentReviewResponse(BaseModel):
+    success: bool = Field(..., description="接口调用是否成功")
+    review_result: str = Field(..., description="审核结果：passed 或 failed")
+    review_message: str = Field(..., description="审核结果描述")
+    failure_reason: Optional[str] = Field(default=None, description="失败原因（审核失败时提供具体原因）")
+    review_duration: float = Field(..., description="审核耗时（秒）")

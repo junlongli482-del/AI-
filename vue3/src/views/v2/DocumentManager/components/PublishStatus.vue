@@ -1,7 +1,7 @@
 <template>
   <div class="publish-status-container">
     <!-- 状态标签 + 图标 -->
-    <div class="status-display" @click="handleStatusClick">
+    <div class="status-display" @click.stop="handleStatusClick">
       <el-tag
         :type="statusConfig.type"
         size="small"
@@ -32,6 +32,7 @@
       title="审核详情"
       width="600px"
       :close-on-click-modal="false"
+      append-to-body
     >
       <div v-if="reviewDetail" class="review-detail">
         <!-- 基本信息 -->

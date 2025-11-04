@@ -101,6 +101,8 @@
 </template>
 
 <script setup>
+// 在文件顶部添加导入
+import { API_BASE_URL } from '@/utils/request'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { View, Download } from '@element-plus/icons-vue'  // 添加这行
@@ -118,7 +120,7 @@ const viewPdfDocument = async () => {
   if (!props.document?.id) return
 
   try {
-    const response = await fetch(`http://localhost:8100/api/v2/document_manager/documents/${props.document.id}/stream`, {
+    const response = await fetch(`${API_BASE_URL}/v2/document_manager/documents/${props.document.id}/stream`, {
       headers: {
         'Authorization': `Bearer ${getToken()}`  // 手动添加Token
       }
@@ -149,7 +151,7 @@ const downloadPdfDocument = async () => {
   if (!props.document?.id) return
 
   try {
-    const response = await fetch(`http://localhost:8100/api/v2/document_manager/documents/${props.document.id}/download`, {
+    const response = await fetch(`${API_BASE_URL}/v2/document_manager/documents/${props.document.id}/download`, {
       headers: {
         'Authorization': `Bearer ${getToken()}`  // 手动添加Token
       }

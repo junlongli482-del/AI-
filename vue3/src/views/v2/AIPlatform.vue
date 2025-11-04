@@ -327,7 +327,7 @@ const showHelp = ref(false)
 const agentLinks = {
   product: 'http://erp.miraclink.com:5200/chat/LLUIQ4m06aZt0dck',
   backend: 'http://erp.miraclink.com:5200/chat/LtBUUEORn88YH5h1',
-  frontend: 'http://erp.miraclink.com:5200/chat/LtBUUEORn88YH5h1'
+  frontend: 'http://erp.miraclink.com:5200/chat/dZKoMVVjyyMurUk8'
 }
 
 onMounted(async () => {

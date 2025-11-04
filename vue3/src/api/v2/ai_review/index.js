@@ -197,3 +197,34 @@ export const formatReviewDuration = (duration) => {
 export const shouldShowReviewDetail = (reason) => {
   return reason && reason.length > 50
 }
+
+/**
+ * 🆕 直接内容审核
+ * @param {Object} data - 审核数据
+ * @param {string} data.title - 文档标题
+ * @param {string} data.content - 文档内容
+ * @param {number} data.document_id - 文档ID（可选）
+ * @returns {Promise} 审核结果
+ * @example
+ * const result = await contentReview({
+ *   title: '文档标题',
+ *   content: '# 文档内容\n\n...',
+ *   document_id: 123
+ * })
+ * if (result.review_result === 'passed') {
+ *   // 审核通过
+ * } else {
+ *   // 审核失败，显示 result.failure_reason
+ * }
+ */
+export const contentReview = (data) => {
+  return request({
+    url: `/v2/ai_review/content-review`,
+    method: 'post',
+    data: {
+      title: data.title,
+      content: data.content,
+      document_id: data.document_id || null
+    }
+  })
+}

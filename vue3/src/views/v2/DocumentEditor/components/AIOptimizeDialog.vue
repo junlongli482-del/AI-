@@ -183,11 +183,50 @@ import {
 // 复制优化后的内容
 const copyOptimizedContent = async () => {
   try {
-    await navigator.clipboard.writeText(optimizedContent.value)
-    ElMessage.success('内容已复制到剪贴板')
+    // 使用传统的 document.execCommand 方法（兼容HTTP协议）
+    const textArea = document.createElement('textarea')
+    textArea.value = optimizedContent.value
+    textArea.style.position = 'fixed'
+    textArea.style.left = '-999999px'
+    textArea.style.top = '-999999px'
+    textArea.style.opacity = '0'
+    document.body.appendChild(textArea)
+    textArea.focus()
+    textArea.select()
+
+    try {
+      const successful = document.execCommand('copy')
+      if (successful) {
+        ElMessage.success('内容已复制到剪贴板')
+      } else {
+        throw new Error('复制命令执行失败')
+      }
+    } finally {
+      document.body.removeChild(textArea)
+    }
   } catch (error) {
     console.error('复制失败:', error)
-    ElMessage.error('复制失败，请手动选择复制')
+    // 降级方案：选中文本让用户手动复制
+    try {
+      const range = document.createRange()
+      const selection = window.getSelection()
+      const optimizedPanel = document.querySelector('.optimized-content')
+
+      if (optimizedPanel) {
+        range.selectNodeContents(optimizedPanel)
+        selection.removeAllRanges()
+        selection.addRange(range)
+        ElMessage({
+          message: '已选中优化后的内容，请按 Ctrl+C 复制',
+          type: 'info',
+          duration: 4000
+        })
+      } else {
+        ElMessage.error('复制失败，请手动选择文本复制')
+      }
+    } catch (selectError) {
+      ElMessage.error('复制失败，请手动选择文本复制')
+    }
   }
 }
 

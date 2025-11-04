@@ -27,6 +27,96 @@ class AIReviewService:
         self.review_prompt_info = """审核内容如下
 """
 
+    def review_content_directly(self, title: str, content: str, document_id: Optional[int] = None) -> Dict[str, Any]:
+        """
+        直接审核文档内容，不保存到数据库
+
+        Args:
+            title: 文档标题
+            content: 文档内容
+            document_id: 文档ID（可选，用于日志记录）
+
+        Returns:
+            Dict: 审核结果
+        """
+        start_time = time.time()
+
+        try:
+            print(f"开始直接内容审核，标题: {title[:50]}...")
+            print(f"内容长度: {len(content)} 字符")
+            if document_id:
+                print(f"关联文档ID: {document_id}")
+
+            # 第一步：检查内容长度限制（MD格式，最多1000行）
+            print("第一步：检查内容长度限制...")
+            size_passed, size_failure_reason, line_count = self.check_md_lines(content)
+
+            if not size_passed:
+                print(f"❌ 内容长度检查未通过: {size_failure_reason}")
+                review_duration = time.time() - start_time
+                return {
+                    "success": True,
+                    "review_result": "failed",
+                    "review_message": "内容审核未通过",
+                    "failure_reason": size_failure_reason,
+                    "review_duration": round(review_duration, 2)
+                }
+
+            print(f"✅ 内容长度检查通过（{line_count}行），开始AI内容安全审核...")
+
+            # 第二步：AI内容安全审核
+            # 构建审核内容（标题 + 内容）
+            review_content = f"标题：{title}\n\n内容：\n{content}"
+
+            # 调用AI服务进行内容安全审核
+            ai_response = self.chat_with_ai(review_content, user_id="content_review")
+
+            if ai_response:
+                # 解析AI响应
+                passed, failure_reason = self.parse_ai_response(ai_response)
+                review_duration = time.time() - start_time
+
+                if passed:
+                    print("✅ AI内容安全审核通过")
+                    return {
+                        "success": True,
+                        "review_result": "passed",
+                        "review_message": "内容审核通过",
+                        "failure_reason": None,
+                        "review_duration": round(review_duration, 2)
+                    }
+                else:
+                    print(f"❌ AI内容安全审核未通过: {failure_reason}")
+                    return {
+                        "success": True,
+                        "review_result": "failed",
+                        "review_message": "内容审核未通过",
+                        "failure_reason": failure_reason,
+                        "review_duration": round(review_duration, 2)
+                    }
+            else:
+                print("❌ AI服务调用失败")
+                review_duration = time.time() - start_time
+                return {
+                    "success": False,
+                    "review_result": "failed",
+                    "review_message": "审核服务异常",
+                    "failure_reason": "AI服务调用失败，请稍后重试",
+                    "review_duration": round(review_duration, 2)
+                }
+
+        except Exception as e:
+            print(f"❌ 内容审核异常: {str(e)}")
+            review_duration = time.time() - start_time
+            return {
+                "success": False,
+                "review_result": "failed",
+                "review_message": "审核过程异常",
+                "failure_reason": f"审核异常: {str(e)}",
+                "review_duration": round(review_duration, 2)
+            }
+
+
     def get_file_type(self, filename: str) -> str:
         """根据文件扩展名确定文件类型"""
         extension = os.path.splitext(filename)[1].lower().replace('.', '')

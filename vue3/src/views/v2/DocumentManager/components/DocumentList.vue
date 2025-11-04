@@ -181,6 +181,8 @@
 </template>
 
 <script setup>
+// 在文件顶部添加导入
+import { API_BASE_URL } from '@/utils/request'
 // 保持原有的所有逻辑不变
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -574,7 +576,7 @@ const editDocument = async (doc) => {
   if (doc.file_type === 'pdf') {
     try {
       const { getToken } = await import('@/utils/auth')
-      const response = await fetch(`http://localhost:8100/api/v2/document_manager/documents/${doc.id}/stream`, {
+      const response = await fetch(`${API_BASE_URL}/v2/document_manager/documents/${doc.id}/stream`, {
         headers: {
           'Authorization': `Bearer ${getToken()}`
         }

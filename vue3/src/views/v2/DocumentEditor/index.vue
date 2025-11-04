@@ -98,6 +98,9 @@ import {
   updateSession,
   generateDefaultTitle
 } from '@/api/v2/md_editor/index'
+// 🆕 添加发布状态和AI审核接口
+import { getPublishStatus } from '@/api/v2/document_publish/index'
+import { contentReview } from '@/api/v2/ai_review/index'
 
 const route = useRoute()
 const router = useRouter()
@@ -240,9 +243,13 @@ const updateUndoRedoState = () => {
 
 // ==================== 统一保存功能 ====================
 
-// 保存功能（新建和编辑都用这个）
-// 保存功能（新建和编辑都用这个）
+// 🆕 保存功能（新建和编辑都用这个）
 const handleSaveAs = async () => {
+  console.log('=== 保存按钮点击 ===')
+  console.log('sessionData:', sessionData.value)
+  console.log('document_id:', sessionData.value?.document_id)
+  console.log('session_type:', sessionData.value?.session_type)
+
   if (!sessionData.value) return
 
   if (!content.value.trim()) {
@@ -250,6 +257,81 @@ const handleSaveAs = async () => {
     return
   }
 
+  // 🆕 检查是否为已发布文档
+  const isPublishedDocument = await checkIfPublishedDocument()
+  console.log('发布状态检查结果:', isPublishedDocument)
+
+  if (isPublishedDocument) {
+    console.log('走已发布文档保存流程')
+    await handlePublishedDocumentSave()
+  } else {
+    console.log('走草稿文档保存流程')
+    await handleDraftDocumentSave()
+  }
+}
+
+// 🆕 检查文档是否已发布
+const checkIfPublishedDocument = async () => {
+  // 只有编辑现有文档才需要检查
+  if (sessionData.value.session_type !== 'edit_document' || !sessionData.value.document_id) {
+    return false
+  }
+
+  try {
+    const statusResponse = await getPublishStatus(sessionData.value.document_id)
+    return statusResponse.data?.publish_status === 'published'
+  } catch (error) {
+    // 如果接口报错（如404），说明文档未发布
+    console.log('文档未发布或获取状态失败:', error)
+    return false
+  }
+}
+
+// 🆕 处理已发布文档保存（需要AI审核）
+const handlePublishedDocumentSave = async () => {
+  isSaving.value = true
+
+  try {
+    // 第一步：提示用户需要AI审核
+    ElMessage({
+      message: '已发布文档修改需要AI审核，正在审核中...',
+      type: 'info',
+      duration: 3000
+    })
+
+    // 第二步：直接审核内容
+    const reviewResult = await contentReview({
+      title: sessionData.value.title || generateDefaultTitle(content.value),
+      content: content.value,
+      document_id: sessionData.value.document_id
+    })
+
+    if (reviewResult.review_result === 'passed') {
+      // 审核通过：执行正常保存流程
+      ElMessage.success('AI审核通过！')
+      await handleDraftDocumentSave()
+    } else {
+      // 审核失败：显示失败原因
+      ElMessageBox.alert(
+        `AI审核未通过，文档未保存。\n\n失败原因：${reviewResult.failure_reason}`,
+        '审核失败',
+        {
+          confirmButtonText: '继续编辑',
+          type: 'error'
+        }
+      )
+    }
+
+  } catch (error) {
+    console.error('AI审核失败:', error)
+    ElMessage.error('AI审核失败：' + error.message)
+  } finally {
+    isSaving.value = false
+  }
+}
+
+// 🆕 处理草稿文档保存（原逻辑）
+const handleDraftDocumentSave = async () => {
   isSaving.value = true
 
   try {
@@ -275,6 +357,7 @@ const handleSaveAs = async () => {
     isSaving.value = false
   }
 }
+
 const handleDocumentSaved = (result) => {
   ElMessage.success('文档保存成功')
 
@@ -319,7 +402,6 @@ const handleAIOptimize = () => {
   optimizeData.value = selectedData
   optimizeDialogVisible.value = true
 }
-
 
 // ==================== 快捷键 ====================
 

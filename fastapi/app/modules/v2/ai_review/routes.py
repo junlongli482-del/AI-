@@ -8,7 +8,8 @@ from app.modules.v2.ai_review.dependencies import get_document_by_id, validate_r
 from app.modules.v2.ai_review.models import AIReviewLog  # 直接导入模型
 from app.modules.v2.ai_review.schemas import (
     ReviewSubmitRequest, ReviewLogResponse, ReviewStatusResponse,
-    ReviewHistoryRequest, ReviewStatsResponse, ReviewResult
+    ReviewHistoryRequest, ReviewStatsResponse, ReviewResult,
+    ContentReviewRequest, ContentReviewResponse  # 添加这两个新的schema
 )
 from app.modules.v2.ai_review.services import ai_review_service
 
@@ -326,4 +327,43 @@ async def get_recent_reviews(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"获取最近审核记录失败: {str(e)}"
+        )
+
+
+@router.post("/content-review", response_model=ContentReviewResponse)
+async def review_content_directly(
+        request: ContentReviewRequest,
+        current_user=Depends(get_current_user)
+):
+    """
+    直接审核文档内容，不保存到数据库
+
+    功能特点：
+    1. 实时审核 - 直接审核传入的内容
+    2. 不保存数据 - 不写入数据库
+    3. 快速响应 - 同步返回审核结果
+    4. 详细反馈 - 失败时提供具体原因
+
+    审核流程：
+    1. 检查内容长度限制（≤1000行）
+    2. AI内容安全审核（政治、暴力、色情等）
+    3. 返回审核结果和详细信息
+    """
+    try:
+        print(f"用户 {current_user.id} 请求直接内容审核")
+
+        # 调用服务进行内容审核
+        review_result = ai_review_service.review_content_directly(
+            title=request.title,
+            content=request.content,
+            document_id=request.document_id
+        )
+
+        return ContentReviewResponse(**review_result)
+
+    except Exception as e:
+        print(f"内容审核接口异常: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"内容审核失败: {str(e)}"
         )

@@ -138,10 +138,6 @@
                 frameborder="0"
                 title="PDF预览"
               >
-                <div class="pdf-fallback">
-                  <p>浏览器不支持PDF预览</p>
-                  <el-button @click="downloadPDF" type="primary">下载PDF</el-button>
-                </div>
               </iframe>
             </div>
           </div>
@@ -186,6 +182,8 @@
 </template>
 
 <script setup>
+// 在文件顶部添加导入
+import { API_BASE_URL } from '@/utils/request'
 import { ref, onMounted, computed, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -261,8 +259,7 @@ const renderedContent = computed(() => {
 
 const pdfUrl = computed(() => {
   if (!documentData.value) return ''
-  const baseUrl = 'http://localhost:8100/api'
-  return `${baseUrl}/v2/tech_square/documents/${documentData.value.id}/stream`
+  return `${API_BASE_URL}/v2/tech_square/documents/${documentData.value.id}/stream`
 })
 
 // 生命周期
@@ -384,8 +381,7 @@ const handleShareSuccess = (data) => {
 
 const downloadMarkdown = () => {
   if (!documentData.value) return
-  const baseUrl = 'http://localhost:8100/api'
-  const url = `${baseUrl}/v2/tech_square/documents/${documentData.value.id}/download`
+  const url = `${API_BASE_URL}/v2/tech_square/documents/${documentData.value.id}/download`
 
   const link = document.createElement('a')
   link.href = url
@@ -423,8 +419,7 @@ const toggleRawContent = () => {
 
 const downloadPDF = () => {
   if (!documentData.value) return
-  const baseUrl = 'http://localhost:8100/api'
-  const url = `${baseUrl}/v2/tech_square/documents/${documentData.value.id}/download`
+  const url = `${API_BASE_URL}/v2/tech_square/documents/${documentData.value.id}/download`
 
   const link = document.createElement('a')
   link.href = url
