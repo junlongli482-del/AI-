@@ -19,8 +19,6 @@ class AccessType(str, Enum):
     DOWNLOAD = "DOWNLOAD"
     COMMENT = "COMMENT"
 
-# 其余代码保持不变...
-
 
 # 创建分享请求
 class CreateShareRequest(BaseModel):
@@ -55,6 +53,20 @@ class AccessShareRequest(BaseModel):
     password: Optional[str] = Field(None, description="分享密码（密码保护时必填）")
 
 
+# 🔧 修复：先定义 AccessLogResponse
+class AccessLogResponse(BaseModel):
+    id: int
+    access_type: AccessType
+    access_result: str
+    visitor_ip: Optional[str]
+    visitor_user_id: Optional[int]
+    visitor_username: Optional[str]
+    accessed_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 # 分享响应
 class ShareResponse(BaseModel):
     id: int
@@ -87,21 +99,7 @@ class ShareDetailResponse(ShareResponse):
     month_views: int
 
     # 最近访问记录
-    recent_access_logs: List['AccessLogResponse']
-
-
-# 访问记录响应
-class AccessLogResponse(BaseModel):
-    id: int
-    access_type: AccessType
-    access_result: str
-    visitor_ip: Optional[str]
-    visitor_user_id: Optional[int]
-    visitor_username: Optional[str]
-    accessed_at: datetime
-
-    class Config:
-        from_attributes = True
+    recent_access_logs: List[AccessLogResponse]
 
 
 # 分享统计响应

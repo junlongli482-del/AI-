@@ -1,6 +1,6 @@
 # 核心框架
 fastapi==0.120.1
-uvicorn==0.38.0
+uvicorn[standard]==0.38.0
 pydantic[email]==2.12.3
 
 # 数据库
@@ -23,3 +23,6 @@ python-decouple==3.8
 
 # 邮件验证
 email-validator==2.3.0
+
+# Windows生产部署（新增）
+gunicorn==21.2.0

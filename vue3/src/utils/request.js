@@ -4,15 +4,12 @@ import { getToken, removeToken } from './auth'
 import router from '@/router'
 
 // ========== API 地址配置 ==========
-// 使用哪个就取消注释哪个，注释掉不用的
+// 自动根据环境使用不同的API地址
+// 开发环境: http://localhost:8100/api
+// 生产环境: /api (相对路径，由Nginx代理)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8100/api'
 
-// 本地开发
-// const API_BASE_URL = 'http://localhost:8100/api'
-//
-// http://ljl.fastapi.cpolar.top
-// 公网访问
-const API_BASE_URL = 'http://ljl.fastapi.cpolar.top/api'
-
+console.log('当前API地址:', API_BASE_URL)
 // ===================================
 
 const request = axios.create({
@@ -20,6 +17,7 @@ const request = axios.create({
   timeout: 10000
 })
 
+// 其余代码保持不变...
 request.interceptors.request.use(
   config => {
     const token = getToken()
@@ -45,10 +43,8 @@ request.interceptors.response.use(
 
       switch (status) {
         case 401:
-          // 直接显示后端返回的错误信息
           if (data.detail) {
             ElMessage.error(data.detail)
-            // 只有在 token 相关错误时才清除 token 并跳转
             if (data.detail.includes('过期') || data.detail.includes('无效') || data.detail.includes('Token')) {
               removeToken()
               router.push('/login')
@@ -84,5 +80,4 @@ request.interceptors.response.use(
 )
 
 export default request
-
 export { API_BASE_URL }

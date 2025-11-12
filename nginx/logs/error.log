@@ -1,0 +1,10 @@
+2025/11/12 14:14:54 [notice] 14708#8256: signal process started
+2025/11/12 14:14:54 [error] 14708#8256: CreateFile() "D:\RuanJan\Nginx\nginx-1.24.0/logs/nginx.pid" failed (2: The system cannot find the file specified)
+2025/11/12 14:15:55 [error] 26468#22784: *1 CreateFile() "D:\RuanJan\Nginx\nginx-1.24.0/html/favicon.ico" failed (2: The system cannot find the file specified), client: 127.0.0.1, server: localhost, request: "GET /favicon.ico HTTP/1.1", host: "localhost", referrer: "http://localhost/"
+2025/11/12 14:16:51 [notice] 21992#15572: signal process started
+2025/11/12 14:28:02 [notice] 16948#16152: signal process started
+2025/11/12 14:36:43 [notice] 22088#21120: signal process started
+2025/11/12 15:06:42 [notice] 936#15720: signal process started
+2025/11/12 15:16:03 [notice] 15632#2440: signal process started
+2025/11/12 15:21:20 [notice] 10580#8188: signal process started
+2025/11/12 15:21:20 [error] 10580#8188: OpenEvent("Global\ngx_quit_10008") failed (2: The system cannot find the file specified)

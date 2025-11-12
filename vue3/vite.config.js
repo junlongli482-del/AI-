@@ -1,10 +1,8 @@
 import { fileURLToPath, URL } from 'node:url'
-
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
@@ -20,9 +18,22 @@ export default defineConfig({
     host: '0.0.0.0',
     open: true,
     allowedHosts: [
-      'ljl.vue.cpolar.top',  // 你的 cpolar 域名
-      '.cpolar.top',         // 允许所有 cpolar.top 的子域名
+      'ljl.vue.cpolar.top',
+      '.cpolar.top',
       'localhost'
     ]
+  },
+  // 🆕 生产构建优化
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    minify: 'terser',
+    rollupOptions: {
+      output: {
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
+      }
+    }
   }
 })
