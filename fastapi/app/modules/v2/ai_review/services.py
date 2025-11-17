@@ -19,9 +19,9 @@ from app.modules.v2.document_manager.models import Document
 class AIReviewService:
     def __init__(self):
         # AI服务配置 - 更新API密钥
-        self.api_url = "http://erp.miraclink.com:5200/v1/chat-messages"
-        self.upload_url = "http://erp.miraclink.com:5200/v1/files/upload"
-        self.api_key = "app-szggphzO1DQGrBx3ISQp0iEY"  # 更新的API密钥
+        self.api_url = "http://ljl.ai.cpolar.top/v1/chat-messages"
+        self.upload_url = "http://ljl.ai.cpolar.top/v1/files/upload"
+        self.api_key = "app-iQQgHET7DP3Cll9xML8HmdDy"  # 更新的API密钥
 
         # 由于AI服务端已经预设了审核提示词，这里只保留一个说明
         self.review_prompt_info = """审核内容如下

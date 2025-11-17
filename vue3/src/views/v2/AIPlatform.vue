@@ -325,9 +325,9 @@ const showHelp = ref(false)
 
 // 智能体链接配置
 const agentLinks = {
-  product: 'http://erp.miraclink.com:5200/chat/LLUIQ4m06aZt0dck',
-  backend: 'http://erp.miraclink.com:5200/chat/LtBUUEORn88YH5h1',
-  frontend: 'http://erp.miraclink.com:5200/chat/dZKoMVVjyyMurUk8'
+  product: 'http://ljl.ai.cpolar.top/chat/H8RYU4PYrJe2KNWF',
+  backend: 'http://ljl.ai.cpolar.top/chat/EBmmsDKspPPWVg6O',
+  frontend: 'http://ljl.ai.cpolar.top/chat/Ks73H7eBRRRpd2YT'
 }
 
 onMounted(async () => {

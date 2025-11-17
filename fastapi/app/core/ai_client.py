@@ -11,10 +11,10 @@ class AIClient:
 
     def __init__(self, api_url: str = None, api_key: str = None):
         # 使用传入参数或默认配置
-        self.api_url = api_url or "http://erp.miraclink.com:5200/v1/chat-messages"
+        self.api_url = api_url or "http://ljl.ai.cpolar.top/v1/chat-messages"
         self.upload_url = api_url.replace("chat-messages",
-                                          "files/upload") if api_url else "http://erp.miraclink.com:5200/v1/files/upload"
-        self.api_key = api_key or "app-r2VTsPlXK2kQDSVtz2zCdBNJ"
+                                          "files/upload") if api_url else "http://ljl.ai.cpolar.top/v1/files/upload"
+        self.api_key = api_key or "app-sgtJC2v8vR8XUVsokGwdd7s0"
         self.user_id = "system-md-editor"  # 系统用户ID
 
     def chat_with_ai(self, query: str, file_ids: Optional[list] = None, file_types: Optional[list] = None) -> Optional[
