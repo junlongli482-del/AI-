@@ -7,8 +7,8 @@
         <h1 class="logo-text">智能开发平台</h1>
       </div>
 
-      <!-- 导航菜单 -->
-      <nav class="nav-menu">
+      <!-- 桌面端导航菜单 -->
+      <nav class="nav-menu desktop-nav">
         <router-link to="/home" class="nav-item">
           <span class="nav-icon">🏠</span>
           <span class="nav-text">首页</span>
@@ -34,21 +34,17 @@
             <div class="user-avatar">
               <span class="avatar-text">{{ getAvatarText() }}</span>
             </div>
-            <div class="user-details">
+            <div class="user-details desktop-only">
               <span class="username">{{ displayName }}</span>
               <span class="user-role">开发者</span>
             </div>
-            <span class="dropdown-arrow">▼</span>
+            <span class="dropdown-arrow desktop-only">▼</span>
           </div>
           <template #dropdown>
             <el-dropdown-menu class="user-dropdown">
               <el-dropdown-item command="profile" class="dropdown-item">
                 <span class="item-icon">👤</span>
                 <span class="item-text">用户中心</span>
-              </el-dropdown-item>
-              <el-dropdown-item command="settings" class="dropdown-item">
-                <span class="item-icon">⚙️</span>
-                <span class="item-text">设置</span>
               </el-dropdown-item>
               <el-dropdown-item command="logout" divided class="dropdown-item logout">
                 <span class="item-icon">🚪</span>
@@ -60,35 +56,41 @@
       </div>
 
       <!-- 移动端菜单按钮 -->
-      <div class="mobile-menu-btn" @click="toggleMobileMenu">
-        <span class="menu-icon">☰</span>
-      </div>
+      <button
+        class="mobile-menu-btn mobile-only"
+        @click="toggleMobileMenu"
+        :class="{ 'menu-active': mobileMenuOpen }"
+      >
+        <span class="menu-icon">{{ mobileMenuOpen ? '✕' : '☰' }}</span>
+      </button>
     </div>
 
     <!-- 移动端导航菜单 -->
-    <div class="mobile-nav" :class="{ 'mobile-nav-open': mobileMenuOpen }">
-      <router-link to="/home" class="mobile-nav-item" @click="closeMobileMenu">
-        <span class="nav-icon">🏠</span>
-        <span class="nav-text">首页</span>
-      </router-link>
-      <router-link to="/document-manager" class="mobile-nav-item" @click="closeMobileMenu">
-        <span class="nav-icon">📚</span>
-        <span class="nav-text">文档管理</span>
-      </router-link>
-      <router-link to="/ai-platform" class="mobile-nav-item" @click="closeMobileMenu">
-        <span class="nav-icon">🤖</span>
-        <span class="nav-text">AI平台</span>
-      </router-link>
-      <router-link to="/tech-square" class="mobile-nav-item" @click="closeMobileMenu">
-        <span class="nav-icon">🌟</span>
-        <span class="nav-text">技术广场</span>
-      </router-link>
-    </div>
+    <transition name="mobile-nav">
+      <div v-if="mobileMenuOpen" class="mobile-nav">
+        <router-link to="/home" class="mobile-nav-item" @click="closeMobileMenu">
+          <span class="nav-icon">🏠</span>
+          <span class="nav-text">首页</span>
+        </router-link>
+        <router-link to="/document-manager" class="mobile-nav-item" @click="closeMobileMenu">
+          <span class="nav-icon">📚</span>
+          <span class="nav-text">文档管理</span>
+        </router-link>
+        <router-link to="/ai-platform" class="mobile-nav-item" @click="closeMobileMenu">
+          <span class="nav-icon">🤖</span>
+          <span class="nav-text">AI平台</span>
+        </router-link>
+        <router-link to="/tech-square" class="mobile-nav-item" @click="closeMobileMenu">
+          <span class="nav-icon">🌟</span>
+          <span class="nav-text">技术广场</span>
+        </router-link>
+      </div>
+    </transition>
   </header>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -105,19 +107,39 @@ const getAvatarText = () => {
 }
 
 const toggleMobileMenu = () => {
+  console.log('Toggle mobile menu clicked', mobileMenuOpen.value) // 调试日志
   mobileMenuOpen.value = !mobileMenuOpen.value
 }
 
 const closeMobileMenu = () => {
+  console.log('Close mobile menu') // 调试日志
   mobileMenuOpen.value = false
 }
+
+// 点击外部关闭菜单
+const handleClickOutside = (event) => {
+  if (mobileMenuOpen.value && !event.target.closest('.app-header')) {
+    closeMobileMenu()
+  }
+}
+
+// 监听路由变化自动关闭菜单
+router.afterEach(() => {
+  closeMobileMenu()
+})
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 
 const handleCommand = async (command) => {
   if (command === 'profile') {
     router.push('/user-center')
-  } else if (command === 'settings') {
-    router.push('/settings')
-  } else if (command === 'logout') {
+  } else if (command === 'logout') {  // 直接连接到 logout 处理
     try {
       await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
         confirmButtonText: '确定',
@@ -162,6 +184,7 @@ const handleCommand = async (command) => {
   gap: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .logo-section:hover {
@@ -189,6 +212,9 @@ const handleCommand = async (command) => {
 .nav-menu {
   display: flex;
   gap: 8px;
+  flex: 1;
+  justify-content: center;
+  max-width: 600px;
 }
 
 .nav-item {
@@ -204,6 +230,7 @@ const handleCommand = async (command) => {
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  white-space: nowrap;
 }
 
 .nav-item::before {
@@ -245,6 +272,7 @@ const handleCommand = async (command) => {
 /* 用户区域 */
 .user-section {
   position: relative;
+  flex-shrink: 0;
 }
 
 .user-info {
@@ -277,6 +305,7 @@ const handleCommand = async (command) => {
   font-weight: 600;
   color: white;
   font-size: 14px;
+  flex-shrink: 0;
 }
 
 .user-details {
@@ -315,99 +344,78 @@ const handleCommand = async (command) => {
   height: 44px;
   border-radius: 12px;
   background: rgba(0, 0, 0, 0.04);
+  border: none;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .mobile-menu-btn:hover {
   background: rgba(0, 122, 255, 0.1);
 }
 
+.mobile-menu-btn.menu-active {
+  background: rgba(0, 122, 255, 0.15);
+  transform: rotate(90deg);
+}
+
 .menu-icon {
   font-size: 18px;
   color: #1d1d1f;
-}
-
-/* 移动端导航 */
-.mobile-nav {
-  display: none;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  padding: 16px 24px;
-  transform: translateY(-100%);
-  opacity: 0;
   transition: all 0.3s ease;
 }
 
-.mobile-nav-open {
-  transform: translateY(0);
-  opacity: 1;
-}
+   /* 移动端导航 */
+ .mobile-nav {
+   background: rgba(255, 255, 255, 0.98);
+   backdrop-filter: blur(20px);
+   border-top: 1px solid rgba(0, 0, 0, 0.06);
+   padding: 16px 24px;
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+ }
 
 .mobile-nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 0;
+  gap: 16px;
+  padding: 16px 12px;
   text-decoration: none;
   color: #86868b;
   font-size: 16px;
   font-weight: 500;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   transition: all 0.3s ease;
+  border-radius: 12px;
+  margin-bottom: 4px;
 }
 
 .mobile-nav-item:last-child {
   border-bottom: none;
+  margin-bottom: 0;
 }
 
 .mobile-nav-item:hover,
 .mobile-nav-item.router-link-active {
   color: #007AFF;
-}
-
-/* 下拉菜单样式 */
-:deep(.user-dropdown) {
-  border-radius: 16px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  backdrop-filter: blur(20px);
-  background: rgba(255, 255, 255, 0.95);
-  padding: 8px;
-}
-
-:deep(.dropdown-item) {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  margin: 2px 0;
-  transition: all 0.3s ease;
-}
-
-:deep(.dropdown-item:hover) {
   background: rgba(0, 122, 255, 0.08);
 }
 
-:deep(.dropdown-item.logout:hover) {
-  background: rgba(255, 59, 48, 0.08);
-  color: #FF3B30;
+.mobile-nav-item .nav-icon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
 }
 
-.item-icon {
+.mobile-nav-item .nav-text {
+  flex: 1;
   font-size: 16px;
-}
-
-.item-text {
-  font-size: 14px;
   font-weight: 500;
 }
 
-/* 响应式设计 */
+/* 修改响应式设计部分 */
 @media (max-width: 1024px) {
   .nav-menu {
     gap: 4px;
@@ -415,6 +423,11 @@ const handleCommand = async (command) => {
 
   .nav-item {
     padding: 10px 16px;
+  }
+
+  /* 只在桌面端导航中隐藏文字 */
+  .desktop-nav .nav-text {
+    display: none;
   }
 }
 
@@ -424,24 +437,25 @@ const handleCommand = async (command) => {
     height: 64px;
   }
 
-  .nav-menu {
+  .desktop-nav {
     display: none;
   }
 
-  .mobile-menu-btn {
+  .mobile-only {
     display: flex;
   }
 
-  .mobile-nav {
-    display: block;
-  }
-
-  .user-details {
+  .desktop-only {
     display: none;
   }
 
   .logo-text {
     font-size: 18px;
+  }
+
+  .user-info {
+    padding: 8px 12px;
+    gap: 8px;
   }
 }
 
@@ -462,6 +476,19 @@ const handleCommand = async (command) => {
     width: 32px;
     height: 32px;
     font-size: 12px;
+  }
+
+  .mobile-nav {
+    padding: 12px 16px;
+  }
+
+  .mobile-nav-item {
+    padding: 14px 12px;
+    gap: 14px;
+  }
+
+  .mobile-nav-item .nav-text {
+    font-size: 15px;
   }
 }
 </style>

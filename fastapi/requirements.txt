@@ -11,6 +11,7 @@ PyMySQL==1.1.1
 python-jose[cryptography]==3.3.0
 bcrypt==4.2.1
 passlib[bcrypt]==1.7.4
+PyJWT==2.8.0
 
 # 文件处理
 python-multipart==0.0.20
@@ -24,5 +25,5 @@ python-decouple==3.8
 # 邮件验证
 email-validator==2.3.0
 
-# Windows生产部署（新增）
+# Windows生产部署
 gunicorn==21.2.0
