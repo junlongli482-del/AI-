@@ -2,7 +2,7 @@
 
 # 📘 Vue3 + FastAPI 全栈文档管理系统
 🚀 企业级全栈文档管理平台
-版本: v4.0 | 更新: 2024-12-20 | 状态: ✅ 生产就绪
+版本: v4.0 | 更新: 2025-11-19 | 状态: ✅ 生产就绪
 
 ## 🌟 项目亮点
 🚀 **企业级性能** - 前端0.5-1秒首屏加载，后端2-4ms API响应  
@@ -514,7 +514,7 @@ curl -X POST "http://localhost/api/v1/user_auth/login" \
 ```
 MIT License
 
-Copyright (c) 2024 Your Name
+Copyright (c) 2025 Your Name
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
