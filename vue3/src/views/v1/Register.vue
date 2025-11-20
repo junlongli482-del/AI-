@@ -69,6 +69,7 @@
                 size="large"
                 class="fancy-input"
                 @blur="handleUsernameBlur"
+                @input="validateUsername"
               >
                 <template #prefix>
                   <div class="input-icon">
@@ -86,6 +87,13 @@
                 </template>
               </el-input>
             </el-form-item>
+            <!-- 🆕 用户名错误提示 -->
+            <transition name="error-fade">
+              <div v-if="usernameError" class="custom-error">
+                <span class="error-icon-small">⚠️</span>
+                <span>{{ usernameError }}</span>
+              </div>
+            </transition>
           </div>
         </div>
 
@@ -98,6 +106,7 @@
                 size="large"
                 class="fancy-input"
                 @blur="handleEmailBlur"
+                @input="validateEmail"
               >
                 <template #prefix>
                   <div class="input-icon">
@@ -115,6 +124,13 @@
                 </template>
               </el-input>
             </el-form-item>
+            <!-- 🆕 邮箱错误提示 -->
+            <transition name="error-fade">
+              <div v-if="emailError" class="custom-error">
+                <span class="error-icon-small">⚠️</span>
+                <span>{{ emailError }}</span>
+              </div>
+            </transition>
           </div>
         </div>
 
@@ -128,6 +144,7 @@
                 size="large"
                 class="fancy-input"
                 show-password
+                @input="validatePassword"
               >
                 <template #prefix>
                   <div class="input-icon">
@@ -138,6 +155,13 @@
                 </template>
               </el-input>
             </el-form-item>
+            <!-- 🆕 密码错误提示 -->
+            <transition name="error-fade">
+              <div v-if="passwordError" class="custom-error">
+                <span class="error-icon-small">⚠️</span>
+                <span>{{ passwordError }}</span>
+              </div>
+            </transition>
           </div>
         </div>
 
@@ -151,6 +175,7 @@
                 size="large"
                 class="fancy-input"
                 show-password
+                @input="validateConfirmPassword"
               >
                 <template #prefix>
                   <div class="input-icon">
@@ -161,6 +186,13 @@
                 </template>
               </el-input>
             </el-form-item>
+            <!-- 🆕 确认密码错误提示 -->
+            <transition name="error-fade">
+              <div v-if="confirmPasswordError" class="custom-error">
+                <span class="error-icon-small">⚠️</span>
+                <span>{{ confirmPasswordError }}</span>
+              </div>
+            </transition>
           </div>
         </div>
 
@@ -223,6 +255,12 @@ const usernameAvailable = ref(null)
 const emailChecking = ref(false)
 const emailAvailable = ref(null)
 
+// 🆕 自定义错误提示状态
+const usernameError = ref('')
+const emailError = ref('')
+const passwordError = ref('')
+const confirmPasswordError = ref('')
+
 const registerForm = reactive({
   username: '',
   email: '',
@@ -230,7 +268,67 @@ const registerForm = reactive({
   confirmPassword: ''
 })
 
-const validateUsername = (rule, value, callback) => {
+// 🆕 验证用户名
+const validateUsername = () => {
+  const value = registerForm.username
+  if (!value) {
+    usernameError.value = '请输入用户名'
+  } else if (!/^[a-zA-Z0-9]{3,20}$/.test(value)) {
+    usernameError.value = '用户名必须是3-20个字符，仅限字母和数字'
+  } else if (usernameAvailable.value === false) {
+    usernameError.value = '该用户名已被使用'
+  } else {
+    usernameError.value = ''
+  }
+}
+
+// 🆕 验证邮箱
+const validateEmail = () => {
+  const value = registerForm.email
+  if (!value) {
+    emailError.value = '请输入邮箱'
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    emailError.value = '请输入有效的邮箱地址'
+  } else if (emailAvailable.value === false) {
+    emailError.value = '该邮箱已被注册'
+  } else {
+    emailError.value = ''
+  }
+}
+
+// 🆕 验证密码
+const validatePassword = () => {
+  const value = registerForm.password
+  if (!value) {
+    passwordError.value = '请输入密码'
+  } else if (value.length < 8) {
+    passwordError.value = '密码至少8位'
+  } else if (!/(?=.*[A-Za-z])(?=.*\d)/.test(value)) {
+    passwordError.value = '密码必须包含字母和数字'
+  } else {
+    passwordError.value = ''
+  }
+
+  // 密码变化时重新验证确认密码
+  if (registerForm.confirmPassword) {
+    validateConfirmPassword()
+  }
+}
+
+// 🆕 验证确认密码
+const validateConfirmPassword = () => {
+  const value = registerForm.confirmPassword
+  if (!value) {
+    confirmPasswordError.value = '请再次输入密码'
+  } else if (value !== registerForm.password) {
+    confirmPasswordError.value = '两次输入的密码不一致'
+  } else {
+    confirmPasswordError.value = ''
+  }
+}
+
+// Element Plus 验证规则（保持原有逻辑）
+const validateUsernameRule = (rule, value, callback) => {
   if (!value) {
     callback(new Error('请输入用户名'))
   } else if (!/^[a-zA-Z0-9]{3,20}$/.test(value)) {
@@ -242,7 +340,7 @@ const validateUsername = (rule, value, callback) => {
   }
 }
 
-const validateEmail = (rule, value, callback) => {
+const validateEmailRule = (rule, value, callback) => {
   if (!value) {
     callback(new Error('请输入邮箱'))
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
@@ -254,7 +352,7 @@ const validateEmail = (rule, value, callback) => {
   }
 }
 
-const validatePassword = (rule, value, callback) => {
+const validatePasswordRule = (rule, value, callback) => {
   if (!value) {
     callback(new Error('请输入密码'))
   } else if (value.length < 8) {
@@ -266,7 +364,7 @@ const validatePassword = (rule, value, callback) => {
   }
 }
 
-const validateConfirmPassword = (rule, value, callback) => {
+const validateConfirmPasswordRule = (rule, value, callback) => {
   if (!value) {
     callback(new Error('请再次输入密码'))
   } else if (value !== registerForm.password) {
@@ -277,10 +375,10 @@ const validateConfirmPassword = (rule, value, callback) => {
 }
 
 const rules = {
-  username: [{ validator: validateUsername, trigger: 'blur' }],
-  email: [{ validator: validateEmail, trigger: 'blur' }],
-  password: [{ validator: validatePassword, trigger: 'blur' }],
-  confirmPassword: [{ validator: validateConfirmPassword, trigger: 'blur' }]
+  username: [{ validator: validateUsernameRule, trigger: 'blur' }],
+  email: [{ validator: validateEmailRule, trigger: 'blur' }],
+  password: [{ validator: validatePasswordRule, trigger: 'blur' }],
+  confirmPassword: [{ validator: validateConfirmPasswordRule, trigger: 'blur' }]
 }
 
 // 粒子样式生成
@@ -310,10 +408,14 @@ const handleUsernameBlur = async () => {
     const response = await checkUsername(registerForm.username)
     usernameAvailable.value = response.available
   } catch (error) {
+    // 404错误已在request.js中静默处理
     usernameAvailable.value = null
   } finally {
     usernameChecking.value = false
   }
+
+  // 重新验证用户名
+  validateUsername()
 }
 
 const handleEmailBlur = async () => {
@@ -327,17 +429,36 @@ const handleEmailBlur = async () => {
     const response = await checkEmail(registerForm.email)
     emailAvailable.value = response.available
   } catch (error) {
+    // 404错误已在request.js中静默处理
     emailAvailable.value = null
   } finally {
     emailChecking.value = false
   }
+
+  // 重新验证邮箱
+  validateEmail()
 }
 
 const handleRegister = async () => {
   if (!registerFormRef.value) return
 
+  // 先进行自定义验证
+  validateUsername()
+  validateEmail()
+  validatePassword()
+  validateConfirmPassword()
+
+  // 检查是否有错误
+  if (usernameError.value || emailError.value || passwordError.value || confirmPasswordError.value) {
+    ElMessage.warning('请检查表单填写是否正确')
+    return
+  }
+
   await registerFormRef.value.validate(async (valid) => {
-    if (!valid) return
+    if (!valid) {
+      ElMessage.warning('请检查表单填写是否正确')
+      return
+    }
 
     loading.value = true
     try {
@@ -347,10 +468,27 @@ const handleRegister = async () => {
         password: registerForm.password
       })
 
+      // 注册成功，清空错误提示
+      usernameError.value = ''
+      emailError.value = ''
+      passwordError.value = ''
+      confirmPasswordError.value = ''
+
       ElMessage.success('注册成功，即将跳转到登录页面')
       setTimeout(() => {
         router.push('/login')
       }, 1500)
+    } catch (error) {
+      console.error('注册失败:', error)
+
+      // 注册失败的错误信息已在request.js中通过ElMessage显示
+      if (error.response?.status === 400) {
+        // 如果是用户名或邮箱重复，重置可用性状态并重新验证
+        usernameAvailable.value = null
+        emailAvailable.value = null
+        validateUsername()
+        validateEmail()
+      }
     } finally {
       loading.value = false
     }
@@ -368,6 +506,49 @@ const handleRegister = async () => {
   position: relative;
   overflow: hidden;
   background: linear-gradient(135deg, #fef5e7 0%, #fed7d7 30%, #f7fafc 50%, #fbb6ce 70%, #f6ad55 100%);
+}
+
+/* 🆕 自定义错误提示样式 */
+.custom-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg,
+  rgba(255, 107, 107, 0.1) 0%,
+  rgba(255, 138, 128, 0.08) 100%);
+  border: 1px solid rgba(255, 107, 107, 0.2);
+  border-radius: 12px;
+  color: #e53e3e;
+  font-size: 13px;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.1);
+}
+
+.error-icon-small {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* 🆕 错误提示动画 */
+.error-fade-enter-active {
+  transition: all 0.3s ease;
+}
+
+.error-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.error-fade-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.error-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
 }
 
 /* 动态背景 */

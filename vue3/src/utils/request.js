@@ -17,7 +17,6 @@ const request = axios.create({
   timeout: 10000
 })
 
-// 其余代码保持不变...
 request.interceptors.request.use(
   config => {
     const token = getToken()
@@ -39,7 +38,18 @@ request.interceptors.response.use(
     console.error('请求错误详情：', error.response || error)
 
     if (error.response) {
-      const { status, data } = error.response
+      const { status, data, config } = error.response
+
+      // 🎯 特殊处理：用户名/邮箱检查接口的404错误 - 静默处理
+      if (status === 404 && config.url) {
+        const isUsernameCheck = config.url.includes('/check-username/')
+        const isEmailCheck = config.url.includes('/check-email/')
+
+        if (isUsernameCheck || isEmailCheck) {
+          // 静默处理，不弹提示，直接返回错误让组件处理
+          return Promise.reject(error)
+        }
+      }
 
       switch (status) {
         case 401:
