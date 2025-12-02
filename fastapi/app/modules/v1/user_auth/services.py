@@ -13,6 +13,7 @@ from sqlalchemy import or_
 
 from app.core.config import settings
 from app.core.database import get_db
+from ....core.redis import user_cache  # 🆕 使用相对路径导入Redis缓存
 from .models import User
 from .schemas import LoginRequest, TokenResponse, UserInfo
 
@@ -162,6 +163,10 @@ class AuthService:
         if login_data.remember_me:
             refresh_token = AuthService.create_refresh_token(data=token_data)
 
+        # 🆕 登录成功后预写用户信息到缓存
+        user_data = user_cache.format_user_data(user)
+        user_cache.set_user_info(user.id, user_data)
+
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
@@ -172,23 +177,49 @@ class AuthService:
     @staticmethod
     def get_current_user(db: Session, token: str) -> Optional[User]:
         """
-        根据令牌获取当前用户
-        Args:
-            db: 数据库会话
-            token: JWT令牌
-        Returns:
-            User: 用户对象，验证失败返回None
+        根据令牌获取当前用户（带Redis缓存优化）
         """
+        print("🔍 [DEBUG] 开始获取当前用户...")
+
         # 验证令牌
         payload = AuthService.verify_token(token)
         if not payload:
+            print("❌ [DEBUG] Token验证失败")
             return None
 
         # 获取用户ID
         user_id = payload.get("sub")
         if not user_id:
+            print("❌ [DEBUG] 无法从Token获取用户ID")
             return None
 
-        # 查询用户
-        user = db.query(User).filter(User.id == int(user_id)).first()
+        user_id = int(user_id)
+        print(f"🔍 [DEBUG] 用户ID: {user_id}")
+
+        # 🚀 尝试从Redis缓存获取用户信息
+        print("🔍 [DEBUG] 尝试从Redis缓存获取用户信息...")
+        try:
+            cached_user_data = user_cache.get_user_info(user_id)
+            if cached_user_data:
+                print("✅ [DEBUG] 从缓存获取用户信息成功")
+                return user_cache.create_user_object(cached_user_data)
+            else:
+                print("❌ [DEBUG] 缓存未命中")
+        except Exception as e:
+            print(f"❌ [DEBUG] 缓存获取异常: {e}")
+
+        print("🔍 [DEBUG] 查询数据库...")
+        # 缓存未命中，查询数据库
+        user = db.query(User).filter(User.id == user_id).first()
+        if user:
+            print("✅ [DEBUG] 数据库查询成功，尝试写入缓存...")
+            try:
+                # 🚀 将用户信息写入Redis缓存
+                user_data = user_cache.format_user_data(user)
+                print(f"💾 [DEBUG] 准备缓存数据: {user_data}")
+                result = user_cache.set_user_info(user_id, user_data)
+                print(f"💾 [DEBUG] 缓存写入结果: {result}")
+            except Exception as e:
+                print(f"❌ [DEBUG] 缓存写入异常: {e}")
+
         return user

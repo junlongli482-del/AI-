@@ -1,6 +1,29 @@
 version: '3.8'
 
 services:
+  # 🆕 Redis缓存服务
+  redis:
+    image: redis:7.0-alpine
+    container_name: docs_redis
+    restart: unless-stopped
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    volumes:
+      - redis_data:/data
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    ports:
+      - "${REDIS_PORT:-16379}:6379"  # 避开常用6379端口
+    networks:
+      - docs_network
+    command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 3s
+      retries: 5
+      interval: 10s
+    sysctls:
+      - net.core.somaxconn=1024
+
   # MySQL数据库
   mysql:
     image: mysql:8.0
@@ -17,7 +40,7 @@ services:
       - ../fastapi/user_system_structure.sql:/docker-entrypoint-initdb.d/init.sql:ro
       - ./config/mysql.cnf:/etc/mysql/conf.d/custom.cnf:ro
     ports:
-      - "${MYSQL_PORT:-13306}:3306"  # 避开常用3306端口
+      - "${MYSQL_PORT:-13306}:3306"
     networks:
       - docs_network
     command: --default-authentication-plugin=mysql_native_password
@@ -43,12 +66,19 @@ services:
       - WORKER_ID=1
       - HOST=0.0.0.0
       - PORT=8000
+      # 🆕 Redis配置
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_DB=0
+      - REDIS_DECODE_RESPONSES=True
     volumes:
       - uploads_data:/app/uploads
     networks:
       - docs_network
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   fastapi-2:
@@ -66,12 +96,19 @@ services:
       - WORKER_ID=2
       - HOST=0.0.0.0
       - PORT=8000
+      # 🆕 Redis配置
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_DB=0
+      - REDIS_DECODE_RESPONSES=True
     volumes:
       - uploads_data:/app/uploads
     networks:
       - docs_network
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   fastapi-3:
@@ -89,12 +126,19 @@ services:
       - WORKER_ID=3
       - HOST=0.0.0.0
       - PORT=8000
+      # 🆕 Redis配置
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_DB=0
+      - REDIS_DECODE_RESPONSES=True
     volumes:
       - uploads_data:/app/uploads
     networks:
       - docs_network
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   fastapi-4:
@@ -112,12 +156,19 @@ services:
       - WORKER_ID=4
       - HOST=0.0.0.0
       - PORT=8000
+      # 🆕 Redis配置
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_DB=0
+      - REDIS_DECODE_RESPONSES=True
     volumes:
       - uploads_data:/app/uploads
     networks:
       - docs_network
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   # Nginx负载均衡
@@ -128,7 +179,7 @@ services:
     container_name: docs_nginx
     restart: unless-stopped
     ports:
-      - "${WEB_PORT:-18080}:80"  # 避开常用80端口
+      - "${WEB_PORT:-18080}:80"
     volumes:
       - uploads_data:/app/uploads:ro
     networks:
@@ -146,6 +197,10 @@ volumes:
   uploads_data:
     driver: local
     name: docs_uploads_data
+  # 🆕 Redis数据持久化
+  redis_data:
+    driver: local
+    name: docs_redis_data
 
 networks:
   docs_network:

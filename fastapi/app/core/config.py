@@ -30,6 +30,16 @@ class Settings:
     # AI服务配置
     BASE_URL: str = config("BASE_URL", default="http://localhost:8100")
 
+    # 🆕 Redis配置
+    REDIS_URL: str = config("REDIS_URL", default="redis://localhost:6379/0")
+    REDIS_PASSWORD: str = config("REDIS_PASSWORD", default="")
+    REDIS_DB: int = config("REDIS_DB", default=0, cast=int)
+    REDIS_DECODE_RESPONSES: bool = config("REDIS_DECODE_RESPONSES", default=True, cast=bool)
+
+    # 🆕 缓存配置
+    USER_CACHE_TTL: int = config("USER_CACHE_TTL", default=3600, cast=int)  # 1小时
+    CACHE_KEY_PREFIX: str = config("CACHE_KEY_PREFIX", default="fastapi_docs")
+
     @property
     def is_production(self) -> bool:
         return self.ENVIRONMENT.lower() == "production"

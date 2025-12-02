@@ -1,8 +1,25 @@
 # 多阶段构建 - 生产优化
 FROM python:3.10-slim as builder
 
+# 设置代理环境变量（构建时使用）
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ENV HTTP_PROXY=$HTTP_PROXY
+ENV HTTPS_PROXY=$HTTPS_PROXY
+
 # 设置工作目录
 WORKDIR /app
+
+# 配置apt使用代理并更新软件源
+RUN if [ -n "$HTTP_PROXY" ]; then \
+        echo "Acquire::http::Proxy \"$HTTP_PROXY\";" > /etc/apt/apt.conf.d/01proxy && \
+        echo "Acquire::https::Proxy \"$HTTPS_PROXY\";" >> /etc/apt/apt.conf.d/01proxy; \
+    fi
+
+# 使用更稳定的软件源
+RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources || \
+    echo "deb https://mirrors.ustc.edu.cn/debian/ bookworm main" > /etc/apt/sources.list && \
+    echo "deb https://mirrors.ustc.edu.cn/debian/ bookworm-updates main" >> /etc/apt/sources.list
 
 # 安装系统依赖
 RUN apt-get update && apt-get install -y \
@@ -14,17 +31,39 @@ RUN apt-get update && apt-get install -y \
 # 复制依赖文件
 COPY fastapi/requirements.txt .
 
+# 配置pip使用代理
+RUN if [ -n "$HTTP_PROXY" ]; then \
+        pip config set global.proxy $HTTP_PROXY; \
+    fi
+
 # 安装Python依赖
 RUN pip install --no-cache-dir --user -r requirements.txt
 
 # 生产阶段
 FROM python:3.10-slim
 
+# 设置代理环境变量
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ENV HTTP_PROXY=$HTTP_PROXY
+ENV HTTPS_PROXY=$HTTPS_PROXY
+
 # 创建非root用户
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
 # 设置工作目录
 WORKDIR /app
+
+# 配置apt使用代理
+RUN if [ -n "$HTTP_PROXY" ]; then \
+        echo "Acquire::http::Proxy \"$HTTP_PROXY\";" > /etc/apt/apt.conf.d/01proxy && \
+        echo "Acquire::https::Proxy \"$HTTPS_PROXY\";" >> /etc/apt/apt.conf.d/01proxy; \
+    fi
+
+# 使用更稳定的软件源
+RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources || \
+    echo "deb https://mirrors.ustc.edu.cn/debian/ bookworm main" > /etc/apt/sources.list && \
+    echo "deb https://mirrors.ustc.edu.cn/debian/ bookworm-updates main" >> /etc/apt/sources.list
 
 # 安装运行时依赖
 RUN apt-get update && apt-get install -y \
@@ -44,6 +83,10 @@ RUN mkdir -p uploads && chown -R appuser:appuser uploads
 ENV PATH=/home/appuser/.local/bin:$PATH
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
+
+# 清除代理环境变量（运行时不需要）
+ENV HTTP_PROXY=
+ENV HTTPS_PROXY=
 
 # 切换到非root用户
 USER appuser

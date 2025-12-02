@@ -3,24 +3,26 @@
 功能：定义文档和文件夹管理的API接口
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List, Optional
+import time
+from datetime import datetime
+import mimetypes
+import os
+from pathlib import Path
 
 from .dependencies import get_db, get_current_active_user, get_db_and_user
 from .services import FolderService, DocumentService
+from .models import Document, Folder, DocumentStatus
 from .schemas import (
     FolderCreateRequest, FolderResponse, FolderTreeResponse,
     DocumentCreateRequest, DocumentUpdateRequest, DocumentResponse,
     DocumentListWithPaginationResponse, SuccessResponse
 )
-from app.modules.v1.user_register.models import User
-# 在现有导入中添加
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from fastapi.responses import FileResponse, StreamingResponse
-import mimetypes
-import os
-from pathlib import Path
-
+from ....core.redis.services import stats_cache_service, document_list_cache_service
+from ....modules.v1.user_register.models import User
 # 创建路由器
 router = APIRouter()
 
@@ -176,7 +178,7 @@ async def get_documents_list(
         current_user: User = Depends(get_current_active_user)
 ):
     """
-    获取文档列表（分页）
+    获取文档列表（分页）（Redis缓存优化版）
 
     参数：
     - **folder_id**: 文件夹ID筛选（可选）
@@ -189,56 +191,178 @@ async def get_documents_list(
     返回：
     - 文档列表（按更新时间倒序）
     - 分页信息
-    """
-    return DocumentService.get_documents_list(db, current_user.id, folder_id, page, page_size)
 
+    性能优化：
+    - ✅ Redis缓存：20分钟TTL
+    - ✅ 用户隔离缓存：每个用户独立缓存
+    - ✅ 文件夹筛选支持：不同文件夹独立缓存
+    - ✅ 缓存未命中时自动查询数据库
+    - ✅ 优雅降级：Redis不可用时直接查询数据库
+    """
+    print("📄 [USER_DOCS] 开始获取用户文档列表（缓存版）")
+    print(f"📄 [USER_DOCS] 用户ID: {current_user.id}, 查询参数: folder_id={folder_id}, page={page}, size={page_size}")
+
+    try:
+        start_time = time.time()
+
+        # 🚀 使用缓存服务获取文档列表
+        def query_function(**kwargs):
+            """实际的数据库查询函数"""
+            print(f"🗄️ [USER_DOCS] 执行数据库查询...")
+
+            # 调用原有服务
+            return DocumentService.get_documents_list(
+                db=kwargs['db'],
+                user_id=kwargs['user_id'],
+                folder_id=kwargs['folder_id'],
+                page=kwargs['page'],
+                page_size=kwargs['page_size']
+            )
+
+        result = await document_list_cache_service.get_user_document_list(
+            db=db,
+            query_func=query_function,
+            user_id=current_user.id,
+            page=page,
+            size=page_size,
+            folder_id=folder_id
+        )
+
+        total_time = (time.time() - start_time) * 1000
+
+        # 添加路由层的调试信息
+        is_cached = result.get("cache_info", {}).get("cached", False)
+        print(f"📄 [USER_DOCS] 用户文档列表获取完成，总耗时: {total_time:.2f}ms")
+        print(f"📄 [USER_DOCS] 缓存状态: {'命中' if is_cached else '未命中'}")
+        print(f"📄 [USER_DOCS] 返回结果: 总数{result.get('total', 0)}, 当前页{len(result.get('documents', []))}条")
+
+        # 添加路由层的性能信息
+        result["_route_debug_info"] = {
+            "route_total_time_ms": round(total_time, 2),
+            "cache_hit": is_cached,
+            "performance_improvement": "缓存命中，跳过数据库查询" if is_cached else "首次查询，已写入缓存",
+            "route_timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "query_params": {
+                "user_id": current_user.id,
+                "folder_id": folder_id,
+                "page": page,
+                "page_size": page_size
+            }
+        }
+
+        if is_cached:
+            print(f"✅ [USER_DOCS] 缓存命中! 总耗时: {total_time:.2f}ms")
+        else:
+            print(f"🔄 [USER_DOCS] 缓存未命中，已查询数据库并写入缓存")
+
+        # 转换为响应模型
+        if isinstance(result, dict):
+            # 如果是字典，需要转换为Pydantic模型
+            return DocumentListWithPaginationResponse(**result)
+        else:
+            # 如果已经是模型，直接返回
+            return result
+
+    except Exception as e:
+        error_time = (time.time() - start_time) * 1000 if 'start_time' in locals() else 0
+        print(f"❌ [USER_DOCS] 获取用户文档列表失败 ({error_time:.2f}ms): {str(e)}")
+
+        # 🛡️ 优雅降级：缓存服务异常时使用原有服务
+        print(f"🔄 [USER_DOCS] 尝试使用原有服务作为降级方案...")
+        try:
+            fallback_result = DocumentService.get_documents_list(db, current_user.id, folder_id, page, page_size)
+
+            print(f"✅ [USER_DOCS] 降级方案成功")
+
+            # 添加降级信息
+            if hasattr(fallback_result, '__dict__'):
+                fallback_result._fallback_info = {
+                    "used_fallback": True,
+                    "fallback_reason": str(e),
+                    "fallback_timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+                }
+
+            return fallback_result
+
+        except Exception as fallback_error:
+            print(f"❌ [USER_DOCS] 降级方案也失败: {str(fallback_error)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"获取文档列表失败: {str(e)}，降级方案也失败: {str(fallback_error)}"
+            )
 
 # ==================== 快捷操作接口 ====================
 
 @router.get("/stats", summary="获取统计信息")
 async def get_user_stats(
-        db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_active_user)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
-    获取用户的文档统计信息
+    获取用户的文档统计信息（Redis缓存优化版）
 
     包含：
     - 总文档数
     - 各状态文档数量
     - 文件夹数量
+    - Redis缓存优化
+    - 详细的性能监控信息
     """
-    from .models import Document, Folder, DocumentStatus
-    from sqlalchemy import func
+    print("🔍 [STATS] =========================")
+    print(f"🔍 [STATS] 开始获取用户统计数据（缓存版）")
+    print(f"🔍 [STATS] 用户ID: {current_user.id}")
+    print(f"🔍 [STATS] 用户名: {current_user.username}")
+    print(f"🔍 [STATS] 请求时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
 
-    # 统计文档数量
-    total_docs = db.query(Document).filter(Document.user_id == current_user.id).count()
+    overall_start = time.time()
 
-    # 按状态统计
-    status_stats = db.query(
-        Document.status,
-        func.count(Document.id)
-    ).filter(
-        Document.user_id == current_user.id
-    ).group_by(Document.status).all()
+    try:
+        print("💾 [STATS] 尝试使用Redis缓存...")
 
-    # 统计文件夹数量
-    total_folders = db.query(Folder).filter(Folder.user_id == current_user.id).count()
+        # 🚀 使用缓存服务获取统计数据
+        cache_start = time.time()
+        result = await stats_cache_service.get_user_document_stats(db, current_user.id)
+        cache_time = (time.time() - cache_start) * 1000
 
-    # 格式化状态统计
-    status_dict = {status.value: 0 for status in DocumentStatus}
-    for status, count in status_stats:
-        status_dict[status] = count
+        # 添加路由层的调试信息
+        total_time = (time.time() - overall_start) * 1000
+        is_cached = result.get("cache_info", {}).get("cached", False)
 
-    return {
-        "total_documents": total_docs,
-        "total_folders": total_folders,
-        "documents_by_status": status_dict,
-        "user_id": current_user.id
-    }
+        if is_cached:
+            print(f"✅ [STATS] 缓存命中! 总耗时: {total_time:.2f}ms")
+            print(f"⚡ [STATS] 缓存服务耗时: {cache_time:.2f}ms")
+            print(f"🚀 [STATS] 性能提升: 跳过了数据库查询!")
+        else:
+            print(f"✅ [STATS] 缓存未命中，已查询数据库并缓存")
+            print(f"⚡ [STATS] 总耗时: {total_time:.2f}ms")
+            print(f"💾 [STATS] 下次请求将从缓存获取")
 
+        # 添加路由层的性能信息
+        result["_route_debug_info"] = {
+            "route_total_time_ms": round(total_time, 2),
+            "cache_service_time_ms": round(cache_time, 2),
+            "cache_hit": is_cached,
+            "performance_improvement": "缓存命中，跳过数据库查询" if is_cached else "首次查询，已写入缓存"
+        }
 
-# 在现有接口后添加以下代码：
+        print(f"📊 [STATS] 返回结果: 文档{result['total_documents']}个, 文件夹{result['total_folders']}个")
+        print(f"📊 [STATS] 状态分布: {result['documents_by_status']}")
+        print(f"💾 [STATS] 缓存状态: {'命中' if is_cached else '未命中'}")
+        print("🔍 [STATS] =========================")
+
+        return result
+
+    except Exception as e:
+        error_time = (time.time() - overall_start) * 1000
+        print(f"❌ [STATS] 统计失败! 耗时: {error_time:.2f}ms")
+        print(f"❌ [STATS] 错误类型: {type(e).__name__}")
+        print(f"❌ [STATS] 错误详情: {str(e)}")
+        print("🔍 [STATS] =========================")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取统计信息失败: {str(e)}"
+        )
+
 
 # ==================== 文件下载接口 ====================
 
@@ -309,5 +433,3 @@ async def get_document_file_info(
     - 是否存在物理文件
     """
     return DocumentService.get_document_file_info(db, doc_id, current_user.id)
-
-
